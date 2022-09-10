@@ -1,7 +1,14 @@
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Options;
+
 namespace Cachr.Core;
 
 public class CachrDistributedCache
 {
+    public CachrDistributedCache(IOptions<CachrDistributedCacheOptions> options)
+    {
+        
+    }
     private readonly ICacheBus _cacheBus;
 
     public CachrDistributedCache(ICacheBus cacheBus)
