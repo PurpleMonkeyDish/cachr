@@ -23,7 +23,6 @@ public class RentedArray<T> : IDisposable
     {
         _data = _segment = new ArraySegment<T>(_dataArray = data, 0, size);
         _pool = pool;
-        
     }
 
     public bool IsPooled
