@@ -17,7 +17,19 @@ jobs:
       - name: Restore Packages
         run: dotnet restore
       - name: Build solution
+        run: dotnet build --no-restore
+      - name: Execute .NET tests
+        uses: zyborg/dotnet-tests-report@v1
+        with:
+          report_name: cachr_unit_tests
+          report_title: Cachr Unit Tests
+          set_check_status_from_test_outcome: true
+          no_restore: true
+          no_build: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gist_name: dotnet-tests-report_xunit.md
+          gist_badge_label: 'Tests: %Counters_passed%/%Counters_total%'
+          gist_token: ${{ secrets.GIST_TOKEN }}
+      - name: Build release mode
         run: dotnet build --no-restore -c Release
-      - name: Run tests
-        run: dotnet test --no-restore
       
