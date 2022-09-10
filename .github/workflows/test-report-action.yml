@@ -7,7 +7,8 @@ jobs:
       - name: Execute .NET tests
         uses: zyborg/dotnet-tests-report@v1
         with:
-          project_path: Cachr.UnitTests
+          project_path: ./Cachr.UnitTests/Cachr.UnitTests.csproj
           report_name: cachr_unit_tests
           report_title: Cachr Unit Tests
+          set_check_status_from_test_outcome: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
