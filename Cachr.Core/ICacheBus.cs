@@ -3,7 +3,6 @@ namespace Cachr.Core;
 public interface ICacheBus
 {
     void Broadcast(byte[] payload);
-    Task BroadcastAsync(byte[] payload, CancellationToken cancellationToken);
-    IEnumerable<string> GetKnownHosts();
+    void SendToOneRandom(byte[] payload);
     event EventHandler<CacheBusDataReceivedEventArgs> DataReceived;
 }
