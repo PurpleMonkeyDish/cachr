@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Cachr.Core;
+using Cachr.Core.Storage;
 using FsCheck;
 using FsCheck.Xunit;
 using Microsoft.Extensions.Caching.Memory;
@@ -134,7 +135,7 @@ public class ShardedMemoryCacheTests
         Assert.Equal(keyCount, allEntries.Length);
         Assert.All(allEntries, kvp => Assert.NotNull(kvp.Key));
         Assert.All(allEntries, kvp => Assert.NotNull(kvp.Value));
-        Assert.All(allEntries, kvp => Assert.Equal(1, kvp.Value.Length));
+        Assert.All(allEntries, kvp => Assert.Single(kvp.Value));
         Assert.All(allEntries, kvp => Assert.Equal($"key{kvp.Value[0]}", kvp.Key));
     }
 
@@ -204,34 +205,5 @@ public class ShardedMemoryCacheTests
         Assert.Throws<ArgumentException>(() =>
             new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions() {MaximumMemoryMegabytes = 0},
                 new NullLoggerFactory()));
-    }
-
-
-    [Fact]
-    public async Task CacheRemovalEventExecutesWithin100Milliseconds()
-    {
-        var semaphoreSlim = new SemaphoreSlim(0, 1);
-        var expectedKey = string.Empty;
-        var expectedEvictionReason = EvictionReason.Removed;
-        string? evictedKey = null;
-        EvictionReason? evictionReason = null;
-
-        void KeyEvictedCallback(object? sender, KeyEvictedEventArgs e)
-        {
-            evictedKey = e.Key;
-            evictionReason = e.EvictionReason;
-            semaphoreSlim.Release();
-        }
-
-        var cacheStorage = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
-            {Shards = 0, MaximumMemoryMegabytes = 256}, new NullLoggerFactory());
-        cacheStorage.KeyEvicted += KeyEvictedCallback;
-        cacheStorage.Set(string.Empty, Array.Empty<byte>());
-        cacheStorage.Remove(string.Empty);
-
-        Assert.True(await semaphoreSlim.WaitAsync(100));
-        Assert.Equal(expectedKey, evictedKey);
-        Assert.NotNull(evictionReason);
-        Assert.Equal(expectedEvictionReason, evictionReason);
     }
 }

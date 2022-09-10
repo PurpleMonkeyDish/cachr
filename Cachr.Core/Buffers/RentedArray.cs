@@ -1,6 +1,6 @@
 using System.Buffers;
 
-namespace Cachr.Core;
+namespace Cachr.Core.Buffers;
 
 public class RentedArray<T> : IDisposable
 {

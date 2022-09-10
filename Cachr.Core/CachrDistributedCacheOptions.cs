@@ -12,5 +12,7 @@ public class CachrDistributedCacheOptions : IOptions<CachrDistributedCacheOption
     /// Maximum total memory cache is allowed to consume
     /// </summary>
     public int MaximumMemoryMegabytes { get; set; } = 512;
+
+    public int ColdStartTtlMaxSeconds { get; set; } = 120; 
     public CachrDistributedCacheOptions Value => this;
 }

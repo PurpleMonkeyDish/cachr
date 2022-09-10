@@ -1,5 +1,6 @@
 using System;
 using Cachr.Core;
+using Cachr.Core.Buffers;
 using Xunit;
 
 namespace Cachr.UnitTests;

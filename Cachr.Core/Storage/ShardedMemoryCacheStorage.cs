@@ -1,9 +1,8 @@
-using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Cachr.Core;
+namespace Cachr.Core.Storage;
 
 public class ShardedMemoryCacheStorage : ICacheStorage, IDisposable
 {
@@ -40,8 +39,9 @@ public class ShardedMemoryCacheStorage : ICacheStorage, IDisposable
 
     private IEnumerable<string> EnumerateKeys()
     {
+        var keys = _keys;
         ThrowIfDisposed();
-        foreach (var set in _keys)
+        foreach (var set in keys!)
         {
             string[] setItems;
             lock (set)
@@ -99,10 +99,6 @@ public class ShardedMemoryCacheStorage : ICacheStorage, IDisposable
         cacheEntry.Size = obj.Length;
         cacheEntry.AbsoluteExpiration = absoluteExpiration;
         cacheEntry.SlidingExpiration = slidingExpiration;
-        cacheEntry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
-        {
-            EvictionCallback = OnCacheEntryEvicted,
-        });
         var keys = GetShardKeys(slot);
         lock (keys)
             keys.Add(key);
@@ -115,13 +111,6 @@ public class ShardedMemoryCacheStorage : ICacheStorage, IDisposable
             return null;
         return data;
     }
-
-    private void OnCacheEntryEvicted(object key, object value, EvictionReason reason, object state)
-    {
-        Debug.Assert(key is string);
-        OnKeyEvicted((string)key, reason);
-    }
-
     public bool TryGet(string key, out byte[] obj)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -140,14 +129,6 @@ public class ShardedMemoryCacheStorage : ICacheStorage, IDisposable
         cache.Remove(key);
         lock (keys)
             keys.Remove(key);
-    }
-
-    public event EventHandler<KeyEvictedEventArgs>? KeyEvicted;
-    private void OnKeyEvicted(string key, EvictionReason evictionReason)
-    {
-        if (KeyEvicted is null) return;
-        var eventArgs = new KeyEvictedEventArgs(key, evictionReason);
-        KeyEvicted?.Invoke(this, eventArgs);
     }
 
     public void Dispose()

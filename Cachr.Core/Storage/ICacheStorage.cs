@@ -1,4 +1,4 @@
-namespace Cachr.Core;
+namespace Cachr.Core.Storage;
 
 public interface ICacheStorage
 {
@@ -6,5 +6,5 @@ public interface ICacheStorage
     byte[]? Get(string key);
     bool TryGet(string key, out byte[] obj);
     void Remove(string key);
-    event EventHandler<KeyEvictedEventArgs> KeyEvicted;
+    IEnumerable<string> Keys { get; }
 }
