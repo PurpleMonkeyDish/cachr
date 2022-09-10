@@ -6,6 +6,11 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v1
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
       - name: Execute .NET tests
         uses: zyborg/dotnet-tests-report@v1
         with:
