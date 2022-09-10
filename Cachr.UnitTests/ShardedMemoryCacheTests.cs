@@ -14,18 +14,21 @@ public class ShardedMemoryCacheTests
 {
     public static class NonNullStringGenerator
     {
+        // ReSharper disable once UnusedMember.Global
         public static Arbitrary<string> Generate() =>
             Arb.Default.String().Filter(s => s is not null);
     }
 
     public static class NonNullByteArrayGenerator
     {
+        // ReSharper disable once UnusedMember.Global
         public static Arbitrary<byte[]> Generate() =>
             Arb.Default.Array<byte>().Filter(b => b is not null);
     }
 
     public static class ShardPowerGenerator
     {
+        // ReSharper disable once UnusedMember.Global
         public static Arbitrary<int> Generate() =>
             Arb.Default.Int32().Filter(i => i is >= 0 and <= 12);
     }
