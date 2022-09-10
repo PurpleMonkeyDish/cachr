@@ -4,6 +4,11 @@ namespace Cachr.Core;
 
 public class KeyEvictedEventArgs : EventArgs
 {
-    public string Key { get; init; }
-    public EvictionReason EvictionReason { get; init; }
+    public KeyEvictedEventArgs(string key, EvictionReason evictionReason)
+    {
+        Key = key;
+        EvictionReason = evictionReason;
+    }
+    public string Key { get; }
+    public EvictionReason EvictionReason { get; }
 }
