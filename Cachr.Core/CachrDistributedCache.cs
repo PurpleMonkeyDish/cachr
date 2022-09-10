@@ -30,7 +30,6 @@ public class CachrDistributedCache : ICachrDistributedCache
 
     private void OnDataReceived(object? sender, CacheBusDataReceivedEventArgs e)
     {
-        using (NotificationPreventer.BeginScope())
         using (e)
         {
             var message = e.Decode();
