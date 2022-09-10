@@ -1,3 +1,4 @@
+using Cachr.Core.Messages.Bus;
 using Cachr.Core.Storage;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -28,4 +29,9 @@ public static class ServiceCollectionExtensions
         services.Configure<CachrDistributedCacheOptions>(configureCallback);
         return services;
     }
+
+
+    
+    public static IServiceCollection UseInMemoryCacheBus(this IServiceCollection services) => 
+        services.AddSingleton<ICacheBus, LocalOnlyCacheBus>();
 }
