@@ -1,0 +1,13 @@
+name: "unit-test-reports"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute .NET tests
+        uses: zyborg/dotnet-tests-report@v1
+        with:
+          project_path: Cachr.UnitTests
+          report_name: cachr_unit_tests
+          report_title: Cachr Unit Tests
+          github_token: ${{ secrets.GITHUB_TOKEN }}
