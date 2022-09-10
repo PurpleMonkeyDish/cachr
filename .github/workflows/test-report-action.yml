@@ -4,6 +4,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: checkout
+        uses: actions/checkout@v1
       - name: Execute .NET tests
         uses: zyborg/dotnet-tests-report@v1
         with:
