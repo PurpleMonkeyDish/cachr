@@ -19,7 +19,7 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet restore
       - run: dotnet build --no-restore
-      - name: Execute .NET tests
+      - name: test
         uses: zyborg/dotnet-tests-report@v1
         with:
           report_name: unit_tests
