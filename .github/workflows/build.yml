@@ -8,8 +8,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v1
+      - uses: actions/checkout@v1
       - uses: actions/setup-dotnet@v2
         with:
           dotnet-version: '6.0.x'
@@ -18,15 +17,13 @@ jobs:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
-      - name: Restore Packages
-        run: dotnet restore
-      - name: Build solution
-        run: dotnet build --no-restore
+      - run: dotnet restore
+      - run: dotnet build --no-restore
       - name: Execute .NET tests
         uses: zyborg/dotnet-tests-report@v1
         with:
-          report_name: cachr_unit_tests
-          report_title: Cachr Unit Tests
+          report_name: unit_tests
+          report_title: Unit Test Results
           set_check_status_from_test_outcome: true
           no_restore: true
           no_build: true
@@ -35,6 +32,5 @@ jobs:
           gist_name: dotnet-tests-report_xunit.md
           gist_badge_label: 'Tests: %Counters_passed%/%Counters_total%'
           gist_token: ${{ secrets.GIST_TOKEN }}
-      - name: Build release mode
-        run: dotnet build --no-restore -c Release -warn 0
+      - run: dotnet build --no-restore -c Release -warn 0
       
