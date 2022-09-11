@@ -5,6 +5,16 @@ on:
       - 'main'
   pull_request: { }
 jobs:
+  pre_build_comment:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Add PR Comment
+        uses: thollander/actions-comment-pull-request@v1
+        with:
+          message: |
+            Thank you for your pull request, your build has started!
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   restore:
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +44,7 @@ jobs:
       - run: dotnet test
   build_test_report:
     runs-on: ubuntu-latest
-    needs: test
+    needs: restore
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-dotnet@v2
@@ -71,4 +81,31 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release -property:WarningLevel=0
-      
+  build_status_comment_success:
+    runs-on: ubuntu-latest
+    if: success() && github.event_name == 'pull_request'
+    needs:
+      - build_release_configuration
+      - build_test_report
+      - pre_build_comment
+    steps:
+      - name: Edit PR comment
+        uses: thollander/actions-comment-pull-request@v1
+        with:
+          message: 'Your build has passed! Thank you for your contribution, you will be able to merge once this PR is approved'
+          comment_includes: 'your build has started'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build_status_comment_failed:
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'pull_request'
+    needs:
+      - build_release_configuration
+      - build_test_report
+      - pre_build_comment
+    steps:
+      - name: Edit PR comment
+        uses: thollander/actions-comment-pull-request@v1
+        with:
+          message: 'Oops, your build has failed. Please fix the build errors and try again! :) '
+          comment_includes: 'your build has started'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
