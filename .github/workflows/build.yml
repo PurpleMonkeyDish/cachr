@@ -30,10 +30,11 @@ jobs:
           set_check_status_from_test_outcome: true
           no_restore: true
           no_build: true
+          extra_test_parameters: '-warn 0'
           github_token: ${{ secrets.GITHUB_TOKEN }}
           gist_name: dotnet-tests-report_xunit.md
           gist_badge_label: 'Tests: %Counters_passed%/%Counters_total%'
           gist_token: ${{ secrets.GIST_TOKEN }}
       - name: Build release mode
-        run: dotnet build --no-restore -c Release
+        run: dotnet build --no-restore -c Release -warn 0
       
