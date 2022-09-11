@@ -8,3 +8,7 @@ Cachr was built with performance in mind, making heavy use of pooled arrays to p
 
 ## Peering
 The current peer discovery code is a WIP, but the intention is to allow various methods of finding peers, and utilizing them. The first communication bus, will use ASP.NET core middleware to intercept messages intended for cachr. In the future, a raw binary protocol will be introduced.
+
+
+## Badges
+[![build](https://github.com/jasoncouture/cachr/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/jasoncouture/cachr/actions/workflows/build.yml)
