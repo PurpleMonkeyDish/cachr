@@ -1,5 +1,6 @@
 using Cachr.Core.Messages.Duplication;
 using Cachr.Core.Messaging;
+using Cachr.Core.Peering;
 using Cachr.Core.Storage;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +18,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
         services.AddSingleton(typeof(IMessageBus<>), typeof(MessageBus<>));
         services.AddSingleton(typeof(IDuplicateTracker<>), typeof(DuplicateTracker<>));
+        services.AddSingleton<IPeerSelector, PeerSelector>();
+        services.AddSingleton<IPeerStatusTracker, PeerStatusTracker>();
     }
 
     public static IServiceCollection AddCachr(this IServiceCollection services, IConfiguration configuration)
