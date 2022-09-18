@@ -56,11 +56,11 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet run -c Release --project Cachr.Benchmarks
-      - name: Store benchmark result
+      - name: Store DuplicateTrackerBenchmarks result
         uses: rhysd/github-action-benchmark@v1
         with:
           tool: 'benchmarkdotnet'
-          output-file-path: BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks-report-full-compressed.json
+          output-file-path: BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
           alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: true
