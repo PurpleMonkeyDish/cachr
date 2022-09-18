@@ -64,8 +64,11 @@ public sealed class PeerSelectorTests
 
         for (var x = 0; x < meshPeers.Length; x++)
         {
-            meshPeers[x].Connections =
-                meshPeers.Where(i => i.Id != meshPeers[x].Id).Select(i => i.Peer).ToImmutableArray();
+            meshPeers[x] = meshPeers[x] with
+            {
+                Connections =
+                meshPeers.Where(i => i.Id != meshPeers[x].Id).Select(i => i.Peer).ToImmutableArray()
+            };
         }
         var selector = CreatePeerSelector();
         Assert.True(selector.AllPeersReachable(meshPeers, Enumerable.Empty<Guid>()));
@@ -83,8 +86,11 @@ public sealed class PeerSelectorTests
 
         for (var x = 0; x < meshPeers.Length; x++)
         {
-            meshPeers[x].Connections =
-                meshPeers.Where(i => i.Id != meshPeers[x].Id).Select(i => i.Peer).ToImmutableArray();
+            meshPeers[x] = meshPeers[x] with
+            {
+                Connections =
+                meshPeers.Where(i => i.Id != meshPeers[x].Id).Select(i => i.Peer).ToImmutableArray()
+            };
         }
 
         var selector = CreatePeerSelector();

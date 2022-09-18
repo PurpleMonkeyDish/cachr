@@ -12,7 +12,7 @@ public class DuplicateTrackerBenchmarks
 {
     private DuplicateTracker<int> _tracker = new DuplicateTracker<int>();
 
-    public record struct TestRange(int Count)
+    public sealed record TestRange(int Count)
     {
         public override string ToString() => $"{Count}";
     }

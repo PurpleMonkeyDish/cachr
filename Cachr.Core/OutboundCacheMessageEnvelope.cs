@@ -2,4 +2,4 @@ using Cachr.Core.Buffers;
 
 namespace Cachr.Core;
 
-public record struct OutboundCacheMessageEnvelope(Guid? Target, IDistributedCacheMessage Message);
+public sealed record OutboundCacheMessageEnvelope(Guid? Target, IDistributedCacheMessage Message);
