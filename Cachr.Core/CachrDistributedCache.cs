@@ -32,7 +32,7 @@ public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
     {
         if (envelope.Target != null && envelope.Target != NodeIdentity.Id)
             return;
-        HandleMessage(DistributedCacheMessageEncoder.Decode(envelope.Data), envelope.Sender);
+        HandleMessage(envelope.Message, envelope.Sender);
     }
 
     public void BeginPreload()
@@ -207,20 +207,18 @@ public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
 
     private async Task SendToRandomAsync(IDistributedCacheMessage message)
     {
-        var encodedMessage = DistributedCacheMessageEncoder.Encode(message);
-        await _messageBus.SendToRandomAsync(new OutboundCacheMessageEnvelope(null, encodedMessage)).ConfigureAwait(false);
+
+        await _messageBus.SendToRandomAsync(new OutboundCacheMessageEnvelope(null, message)).ConfigureAwait(false);
     }
 
     private async Task BroadcastAsync(IDistributedCacheMessage message)
     {
-        var encodedMessage = DistributedCacheMessageEncoder.Encode(message);
-        await _messageBus.BroadcastAsync(new OutboundCacheMessageEnvelope(null, encodedMessage)).ConfigureAwait(false);
+        await _messageBus.BroadcastAsync(new OutboundCacheMessageEnvelope(null, message)).ConfigureAwait(false);
     }
 
     private async Task SendToAsync(Guid targetId, IDistributedCacheMessage message)
     {
-        var encodedMessage = DistributedCacheMessageEncoder.Encode(message);
-        await _messageBus.BroadcastAsync(new OutboundCacheMessageEnvelope(targetId, encodedMessage)).ConfigureAwait(false);
+        await _messageBus.BroadcastAsync(new OutboundCacheMessageEnvelope(targetId, message)).ConfigureAwait(false);
     }
 
     private async Task SetInternalAsync(string key, byte[] value, DistributedCacheEntryOptions? options)

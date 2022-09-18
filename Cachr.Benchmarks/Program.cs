@@ -1,5 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using BenchmarkDotNet.Running;
+using Cachr.Benchmarks;
 
-var summary = BenchmarkRunner.Run(assembly: typeof(Program).Assembly, args: args);
+BenchmarkRunner.Run<DuplicateTrackerBenchmarks> (args: args);
+BenchmarkRunner.Run<EndToEndBenchmarks>(args: args);
