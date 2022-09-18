@@ -1,3 +1,4 @@
+using Cachr.Core.Messages.Duplication;
 using Cachr.Core.Messaging;
 using Cachr.Core.Storage;
 using Microsoft.Extensions.Caching.Distributed;
@@ -15,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<ICachrDistributedCache, CachrDistributedCache>();
         services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
         services.AddSingleton(typeof(IMessageBus<>), typeof(MessageBus<>));
+        services.AddSingleton(typeof(IDuplicateTracker<>), typeof(DuplicateTracker<>));
     }
 
     public static IServiceCollection AddCachr(this IServiceCollection services, IConfiguration configuration)
