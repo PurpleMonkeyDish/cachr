@@ -35,11 +35,6 @@ public sealed class JsonSerializationTests
             }) });
     }
 
-    private object[] Wrap(object obj)
-    {
-        return new[] {obj};
-    }
-
     [Theory]
     [MemberData(nameof(GenerateSerializerTestCases))]
     public void CacheMessageContextCanDecodeItsOwnOutput(CacheGossipMessage message)
@@ -56,8 +51,4 @@ public sealed class JsonSerializationTests
 
         Assert.Equal((IEnumerable<byte>)data, nextData);
     }
-}
-public class CacheMessageProcessingTests
-{
-
 }
