@@ -1,12 +1,10 @@
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Cachr.Core;
 using Cachr.Core.Storage;
 using FsCheck;
 using FsCheck.Xunit;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -14,34 +12,11 @@ namespace Cachr.UnitTests;
 
 public class ShardedMemoryCacheTests
 {
-    public static class NonNullStringGenerator
-    {
-        // ReSharper disable once UnusedMember.Global
-        public static Arbitrary<string> Generate() =>
-            Arb.Default.String().Filter(s => s is not null);
-    }
-
-    public static class NonNullByteArrayGenerator
-    {
-        // ReSharper disable once UnusedMember.Global
-        public static Arbitrary<byte[]> Generate() =>
-            Arb.Default.Array<byte>().Filter(b => b is not null);
-    }
-
-    public static class ShardPowerGenerator
-    {
-        // ReSharper disable once UnusedMember.Global
-        public static Arbitrary<int> Generate() =>
-            Arb.Default.Int32().Filter(i => i is >= 0 and <= 12);
-    }
-
     [Property(Arbitrary = new[] {typeof(ShardPowerGenerator)})]
     public void ShardedMemoryCacheThrowsObjectDisposedWhenDisposed(int shardPower)
     {
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
-        {
-            Shards = shardPower
-        }, new NullLoggerFactory());
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = shardPower},
+            new NullLoggerFactory());
         Assert.NotNull(cache.MemoryCaches);
         cache.Dispose();
         Assert.Null(cache.MemoryCaches);
@@ -55,14 +30,14 @@ public class ShardedMemoryCacheTests
 
     [Property(
         Arbitrary = new[]
-            {typeof(NonNullStringGenerator), typeof(NonNullByteArrayGenerator), typeof(ShardPowerGenerator)},
+        {
+            typeof(NonNullStringGenerator), typeof(NonNullByteArrayGenerator), typeof(ShardPowerGenerator)
+        },
         MaxTest = 500)]
     public void CacheStorageAndRetrievalPropertyTest(string key, byte[] data, int shardPower)
     {
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
-        {
-            Shards = shardPower
-        }, new NullLoggerFactory());
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = shardPower},
+            new NullLoggerFactory());
 
         cache.Set(key, data);
 
@@ -80,14 +55,14 @@ public class ShardedMemoryCacheTests
 
     [Property(
         Arbitrary = new[]
-            {typeof(NonNullStringGenerator), typeof(NonNullByteArrayGenerator), typeof(ShardPowerGenerator)},
+        {
+            typeof(NonNullStringGenerator), typeof(NonNullByteArrayGenerator), typeof(ShardPowerGenerator)
+        },
         MaxTest = 500)]
     public void KeyStorageAndRetrievalPropertyTest(string key, byte[] data, int shardPower)
     {
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
-        {
-            Shards = shardPower
-        }, new NullLoggerFactory());
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = shardPower},
+            new NullLoggerFactory());
 
         Assert.DoesNotContain(key, cache.Keys);
         cache.Set(key, data);
@@ -101,14 +76,16 @@ public class ShardedMemoryCacheTests
     [Property(Arbitrary = new[] {typeof(ShardPowerGenerator)})]
     public void CanEnumerateKeys(int shardPower, byte keyCount)
     {
-        if (keyCount == 0) return;
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
+        if (keyCount == 0)
         {
-            Shards = shardPower
-        }, new NullLoggerFactory());
+            return;
+        }
+
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = shardPower},
+            new NullLoggerFactory());
 
         Parallel.ForEach(Enumerable.Range(0, keyCount),
-            new ParallelOptions() {MaxDegreeOfParallelism = (shardPower * 100) + 1},
+            new ParallelOptions {MaxDegreeOfParallelism = shardPower * 100 + 1},
             i => { cache.Set($"key{i}", Array.Empty<byte>()); });
 
         var allKeys = cache.Keys.ToArray();
@@ -120,15 +97,17 @@ public class ShardedMemoryCacheTests
     [Property(Arbitrary = new[] {typeof(ShardPowerGenerator)})]
     public void CanEnumerateEntries(int shardPower, byte keyCount)
     {
-        if (keyCount == 0) return;
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
+        if (keyCount == 0)
         {
-            Shards = shardPower
-        }, new NullLoggerFactory());
+            return;
+        }
+
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = shardPower},
+            new NullLoggerFactory());
 
         Parallel.ForEach(Enumerable.Range(0, keyCount),
-            new ParallelOptions() {MaxDegreeOfParallelism = (shardPower * 100) + 1},
-            i => { cache.Set($"key{i}", new[] {(byte) i}); });
+            new ParallelOptions {MaxDegreeOfParallelism = shardPower * 100 + 1},
+            i => { cache.Set($"key{i}", new[] {(byte)i}); });
 
         var allEntries = cache.AllEntries.ToArray();
         Assert.NotNull(allEntries);
@@ -139,12 +118,79 @@ public class ShardedMemoryCacheTests
         Assert.All(allEntries, kvp => Assert.Equal($"key{kvp.Value[0]}", kvp.Key));
     }
 
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 2)]
+    [InlineData(10, 1024)]
+    [InlineData(12, 4096)]
+    public void CacheShardCountCalculatesAsExpected(int power, int expectedCount)
+    {
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = power},
+            new NullLoggerFactory());
+
+        Assert.NotNull(cache.MemoryCaches);
+        Assert.Equal(expectedCount, cache.MemoryCaches!.Length);
+    }
+
+    [Fact]
+    public void PropertiesThrowWhenDisposed()
+    {
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = 0},
+            new NullLoggerFactory());
+
+        cache.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => cache.Keys.ToArray());
+        Assert.Throws<ObjectDisposedException>(() => cache.AllEntries.ToArray());
+    }
+
+    [Fact]
+    public void ShardedMemoryCacheThrowsWhenNegativeShardsAreConfigured()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = -1}, new NullLoggerFactory()));
+    }
+
+    [Fact]
+    public void ShardedMemoryCacheThrowsWhenMemoryIsSetToLessThanOne()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {MaximumMemoryMegabytes = 0},
+                new NullLoggerFactory()));
+    }
+
+    public static class NonNullStringGenerator
+    {
+        // ReSharper disable once UnusedMember.Global
+        public static Arbitrary<string> Generate()
+        {
+            return Arb.Default.String().Filter(s => s is not null);
+        }
+    }
+
+    public static class NonNullByteArrayGenerator
+    {
+        // ReSharper disable once UnusedMember.Global
+        public static Arbitrary<byte[]> Generate()
+        {
+            return Arb.Default.Array<byte>().Filter(b => b is not null);
+        }
+    }
+
+    public static class ShardPowerGenerator
+    {
+        // ReSharper disable once UnusedMember.Global
+        public static Arbitrary<int> Generate()
+        {
+            return Arb.Default.Int32().Filter(i => i is >= 0 and <= 12);
+        }
+    }
+
 
 #nullable disable
     [Fact]
     public void AllPublicMethodsThrowWhenKeyIsNull()
     {
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions() {Shards = 0},
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = 0},
             new NullLoggerFactory());
 
         Assert.Throws<ArgumentNullException>("key", () => cache.Set(null, Array.Empty<byte>()));
@@ -155,55 +201,11 @@ public class ShardedMemoryCacheTests
     [Fact]
     public void SetOperationArgumentNullExceptionHasDifferentParamNames()
     {
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions() {Shards = 0},
+        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions {Shards = 0},
             new NullLoggerFactory());
 
         Assert.Throws<ArgumentNullException>("obj", () => cache.Set("", null));
         Assert.Throws<ArgumentNullException>("key", () => cache.Set(null, Array.Empty<byte>()));
     }
 #nullable restore
-
-    [Theory]
-    [InlineData(0, 1)]
-    [InlineData(1, 2)]
-    [InlineData(10, 1024)]
-    [InlineData(12, 4096)]
-    public void CacheShardCountCalculatesAsExpected(int power, int expectedCount)
-    {
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
-        {
-            Shards = power
-        }, new NullLoggerFactory());
-
-        Assert.NotNull(cache.MemoryCaches);
-        Assert.Equal(expectedCount, cache.MemoryCaches!.Length);
-    }
-
-    [Fact]
-    public void PropertiesThrowWhenDisposed()
-    {
-        var cache = new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions()
-        {
-            Shards = 0
-        }, new NullLoggerFactory());
-        
-        cache.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => cache.Keys.ToArray());
-        Assert.Throws<ObjectDisposedException>(() => cache.AllEntries.ToArray());
-    }
-
-    [Fact]
-    public void ShardedMemoryCacheThrowsWhenNegativeShardsAreConfigured()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions() {Shards = -1}, new NullLoggerFactory()));
-    }
-
-    [Fact]
-    public void ShardedMemoryCacheThrowsWhenMemoryIsSetToLessThanOne()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new ShardedMemoryCacheStorage(new CachrDistributedCacheOptions() {MaximumMemoryMegabytes = 0},
-                new NullLoggerFactory()));
-    }
 }

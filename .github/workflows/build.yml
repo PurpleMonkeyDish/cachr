@@ -1,7 +1,7 @@
 name: "build"
-on: 
+on:
   push:
-    branches: 
+    branches:
       - 'main'
   pull_request: { }
 jobs:
@@ -42,6 +42,30 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet test
+  benchmark:
+    runs-on: ubuntu-latest
+    needs: restore
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '6.0.x'
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      - run: dotnet run -c Release --project Cachr.Benchmarks
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          tool: 'benchmarkdotnet'
+          output-file-path: BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks-report-full-compressed.json
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          auto-push: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
   build_test_report:
     runs-on: ubuntu-latest
     needs: restore

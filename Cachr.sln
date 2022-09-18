@@ -7,9 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.Core", "Cachr.Core\Ca
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.UnitTests", "Cachr.UnitTests\Cachr.UnitTests.csproj", "{A3646998-05CB-4025-9535-597DAA82EF11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.AspNetCore.Discovery", "Cachr.AspNetCore.Discovery\Cachr.AspNetCore.Discovery.csproj", "{EE42C546-74E3-4672-9D31-2B03BE55A2B9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.AspNetCore", "Cachr.AspNetCore\Cachr.AspNetCore.csproj", "{63A41CF8-AF26-499B-A8E4-005758ADA55C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.Benchmarks", "Cachr.Benchmarks\Cachr.Benchmarks.csproj", "{20ECFE48-AC31-47B9-8E6A-A989DBFDD1D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,13 +26,9 @@ Global
 		{A3646998-05CB-4025-9535-597DAA82EF11}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A3646998-05CB-4025-9535-597DAA82EF11}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A3646998-05CB-4025-9535-597DAA82EF11}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EE42C546-74E3-4672-9D31-2B03BE55A2B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EE42C546-74E3-4672-9D31-2B03BE55A2B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EE42C546-74E3-4672-9D31-2B03BE55A2B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EE42C546-74E3-4672-9D31-2B03BE55A2B9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{63A41CF8-AF26-499B-A8E4-005758ADA55C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{63A41CF8-AF26-499B-A8E4-005758ADA55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{63A41CF8-AF26-499B-A8E4-005758ADA55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{63A41CF8-AF26-499B-A8E4-005758ADA55C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20ECFE48-AC31-47B9-8E6A-A989DBFDD1D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20ECFE48-AC31-47B9-8E6A-A989DBFDD1D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20ECFE48-AC31-47B9-8E6A-A989DBFDD1D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20ECFE48-AC31-47B9-8E6A-A989DBFDD1D2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

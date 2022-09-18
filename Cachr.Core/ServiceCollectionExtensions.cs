@@ -1,4 +1,4 @@
-using Cachr.Core.Messages.Bus;
+using Cachr.Core.Messaging;
 using Cachr.Core.Storage;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -13,8 +13,10 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddSingleton<ICacheStorage, ShardedMemoryCacheStorage>();
         services.TryAddSingleton<ICachrDistributedCache, CachrDistributedCache>();
-        services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());        
+        services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
+        services.AddSingleton(typeof(IMessageBus<>), typeof(MessageBus<>));
     }
+
     public static IServiceCollection AddCachr(this IServiceCollection services, IConfiguration configuration)
     {
         AddCoreServices(services);
@@ -26,12 +28,7 @@ public static class ServiceCollectionExtensions
         Action<CachrDistributedCacheOptions> configureCallback)
     {
         AddCoreServices(services);
-        services.Configure<CachrDistributedCacheOptions>(configureCallback);
+        services.Configure(configureCallback);
         return services;
     }
-
-
-    
-    public static IServiceCollection UseInMemoryCacheBus(this IServiceCollection services) => 
-        services.AddSingleton<ICacheBus, LocalOnlyCacheBus>();
 }

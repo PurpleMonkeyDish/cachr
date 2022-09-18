@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Cachr.Core.Messages;
 
-public record GetKeyDataDistributedCacheMessage : IDistributedCacheMessage
+public sealed record GetKeyDataDistributedCacheMessage : IDistributedCacheMessage
 {
     public GetKeyDataDistributedCacheMessage(string key)
     {
@@ -10,15 +10,18 @@ public record GetKeyDataDistributedCacheMessage : IDistributedCacheMessage
         Key = key;
         MaximumWireSize = sizeof(int) + 1 + Encoding.UTF8.GetMaxByteCount(Key.Length);
     }
-    public GetKeyDataDistributedCacheMessage(BinaryReader reader, Guid id) 
+
+    public GetKeyDataDistributedCacheMessage(BinaryReader reader, Guid id)
         : this(reader.ReadString())
     {
         Id = id;
     }
+
+    public string Key { get; }
     public DistributedCacheMessageType Type { get; } = DistributedCacheMessageType.GetKeyData;
     public Guid Id { get; } = Guid.NewGuid();
-    public string Key { get; }
     public int MaximumWireSize { get; }
+
     public void Encode(BinaryWriter writer)
     {
         writer.Write(Key);
