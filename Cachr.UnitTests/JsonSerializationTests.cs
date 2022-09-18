@@ -7,11 +7,18 @@ using System.Text.Json;
 using Cachr.Core.Buffers;
 using Cachr.Core.Discovery;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Cachr.UnitTests;
 
 public sealed class JsonSerializationTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public JsonSerializationTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
 
     public static IEnumerable<object[]> GenerateSerializerTestCases()
     {
@@ -44,6 +51,7 @@ public sealed class JsonSerializationTests
         Assert.NotNull(jsonTypeInfo);
         var data = JsonSerializer.SerializeToUtf8Bytes(message, jsonTypeInfo);
         var jsonString = Encoding.UTF8.GetString(data);
+        _testOutputHelper.WriteLine(jsonString);
 
         Assert.NotEmpty(data);
         var decodedObject = JsonSerializer.Deserialize(data, jsonTypeInfo);

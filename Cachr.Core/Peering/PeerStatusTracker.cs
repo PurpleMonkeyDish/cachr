@@ -5,7 +5,7 @@ namespace Cachr.Core.Peering;
 public sealed class PeerStatusTracker : IPeerStatusTracker
 {
     private readonly object _lockToken = new object();
-    private readonly Dictionary<Guid, PeerStateUpdateMessage> _latestPeerStateUpdates = new Dictionary<Guid, PeerStateUpdateMessage>();
+    private readonly Dictionary<Guid, PeerStateUpdateMessage?> _latestPeerStateUpdates = new Dictionary<Guid, PeerStateUpdateMessage?>();
     private PeerStateUpdateMessage[]? _peerStateUpdateMessageCache = Array.Empty<PeerStateUpdateMessage>();
     private readonly HashSet<Guid> _peers = new HashSet<Guid>();
     private Guid[]? _connectedPeerCache = Array.Empty<Guid>();
@@ -24,7 +24,7 @@ public sealed class PeerStatusTracker : IPeerStatusTracker
         {
             lock (_lockToken)
             {
-                return _latestPeerStateUpdates.Values.ToArray();
+                return _latestPeerStateUpdates.Values.Cast<PeerStateUpdateMessage>().ToArray();
             }
         };
     }
@@ -51,18 +51,18 @@ public sealed class PeerStatusTracker : IPeerStatusTracker
     {
         var existing = GetAllUpdates().FirstOrDefault(i => i.Peer.Id == message.Peer.Id);
         var isMarkedConnected = GetConnectedPeers().Any(i => i == message.Peer.Id);
-        if (existing.TimeStamp > message.TimeStamp || existing.Id == message.Id)
+        if (existing is not null && ( existing.TimeStamp > message.TimeStamp || existing.Id == message.Id))
             return; // We have a newer record, or this is a duplicate.
         if (message.State > PeerState.Suspect)
         {
-            if (existing == default && !isMarkedConnected) return;
+            if (!isMarkedConnected) return;
             RemovePeerMessage(message, isMarkedConnected, existing);
             return;
         }
 
         lock (_lockToken)
         {
-            existing = _latestPeerStateUpdates.GetValueOrDefault(message.Peer.Id, default);
+            existing = _latestPeerStateUpdates.GetValueOrDefault(message.Peer.Id);
             // Another thread updated first. Not a big deal.
             if (existing != default && existing.TimeStamp >= message.TimeStamp)
                 return;
@@ -81,26 +81,26 @@ public sealed class PeerStatusTracker : IPeerStatusTracker
     }
 
     private void RemovePeerMessage(PeerStateUpdateMessage message, bool isMarkedConnected,
-        PeerStateUpdateMessage existing)
+        PeerStateUpdateMessage? existing)
     {
-        if (existing == default && !isMarkedConnected) return;
+        if (existing == null && !isMarkedConnected) return;
         lock (_lockToken)
         {
             // Have to re-fetch existing and isMarkedConnected (if false) under the lock, to make 100% sure.
-            existing = _latestPeerStateUpdates.GetValueOrDefault(message.Peer.Id, default);
+            existing = _latestPeerStateUpdates.GetValueOrDefault(message.Peer.Id, null);
             isMarkedConnected = isMarkedConnected || _peers.Contains(message.Peer.Id);
             // Another thread updated first. Not a big deal.
-            if (existing != default && existing.TimeStamp >= message.TimeStamp)
+            if (existing != null && existing.TimeStamp >= message.TimeStamp)
                 return;
             if (isMarkedConnected)
                 _peers.Remove(message.Peer.Id);
-            if (existing != default)
+            if (existing != null)
             {
                 _latestPeerStateUpdates.Remove(existing.Id);
             }
         }
 
-        InvalidateCache(state: existing != default, connected: isMarkedConnected);
+        InvalidateCache(state: existing != null, connected: isMarkedConnected);
     }
 
     public void NotifyNewConnection(Guid id)
