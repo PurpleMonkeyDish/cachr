@@ -5,7 +5,7 @@ on:
       - 'main'
   pull_request: { }
 concurrency:
-  group: ${{ github.head_ref }}
+  group: concurrency-group-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
   restore:
