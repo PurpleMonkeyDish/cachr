@@ -55,7 +55,7 @@ jobs:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
-      - run: dotnet run -c Release --project Cachr.Benchmarks
+      - run: dotnet run -c Release --project Cachr.Benchmarks -- -j short
       - name: Store DuplicateTrackerBenchmarks result
         uses: rhysd/github-action-benchmark@v1
         with:
