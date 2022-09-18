@@ -7,11 +7,18 @@ using System.Text.Json;
 using Cachr.Core.Buffers;
 using Cachr.Core.Discovery;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Cachr.UnitTests;
 
-public class JsonSerializationTests
+public sealed class JsonSerializationTests
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public JsonSerializationTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
 
     public static IEnumerable<object[]> GenerateSerializerTestCases()
     {
@@ -35,29 +42,18 @@ public class JsonSerializationTests
             }) });
     }
 
-    private object[] Wrap(object obj)
-    {
-        return new[] {obj};
-    }
-
     [Theory]
     [MemberData(nameof(GenerateSerializerTestCases))]
     public void CacheMessageContextCanDecodeItsOwnOutput(CacheGossipMessage message)
     {
-
-        var jsonTypeInfo = CacheMessageContext.Default.CacheGossipMessage;
-        Assert.NotNull(jsonTypeInfo);
-        var data = JsonSerializer.SerializeToUtf8Bytes(message, jsonTypeInfo);
+        var data = JsonSerializer.SerializeToUtf8Bytes(message);
         var jsonString = Encoding.UTF8.GetString(data);
+        _testOutputHelper.WriteLine(jsonString);
 
         Assert.NotEmpty(data);
-        var decodedObject = JsonSerializer.Deserialize(data, jsonTypeInfo);
-        var nextData = JsonSerializer.SerializeToUtf8Bytes(decodedObject, jsonTypeInfo);
+        var decodedObject = JsonSerializer.Deserialize<CacheGossipMessage>(data);
+        var nextData = JsonSerializer.SerializeToUtf8Bytes(decodedObject);
 
         Assert.Equal((IEnumerable<byte>)data, nextData);
     }
-}
-public class CacheMessageProcessingTests
-{
-
 }

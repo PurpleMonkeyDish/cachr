@@ -4,7 +4,7 @@ using Cachr.Core.Buffers;
 
 namespace Cachr.Core.Discovery;
 
-public record struct CacheGossipMessage(
+public sealed record CacheGossipMessage(
     CacheGossipType Type,
     Guid Sender,
     Guid? Target,

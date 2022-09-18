@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Cachr.UnitTests;
 
-public class DuplicateTrackerTests
+public sealed class DuplicateTrackerTests
 {
     [Property]
     public void DuplicateTrackerDetectsDuplicates(int value)

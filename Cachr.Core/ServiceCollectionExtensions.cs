@@ -1,5 +1,7 @@
+using Cachr.Core.Discovery;
 using Cachr.Core.Messages.Duplication;
 using Cachr.Core.Messaging;
+using Cachr.Core.Peering;
 using Cachr.Core.Storage;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -14,9 +16,12 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddSingleton<ICacheStorage, ShardedMemoryCacheStorage>();
         services.TryAddSingleton<ICachrDistributedCache, CachrDistributedCache>();
+        services.TryAddSingleton<IPeerDiscoveryProvider, DefaultPeerDiscoveryProvider>();
         services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
         services.AddSingleton(typeof(IMessageBus<>), typeof(MessageBus<>));
         services.AddSingleton(typeof(IDuplicateTracker<>), typeof(DuplicateTracker<>));
+        services.AddSingleton<IPeerSelector, PeerSelector>();
+        services.AddSingleton<IPeerStatusTracker, PeerStatusTracker>();
     }
 
     public static IServiceCollection AddCachr(this IServiceCollection services, IConfiguration configuration)
@@ -27,10 +32,25 @@ public static class ServiceCollectionExtensions
     }
 
     public static IServiceCollection AddCachr(this IServiceCollection services,
-        Action<CachrDistributedCacheOptions> configureCallback)
+        Action<CachrDistributedCacheOptions> configureAction)
     {
         AddCoreServices(services);
-        services.Configure(configureCallback);
+        services.Configure(configureAction);
+        return services;
+    }
+
+    public static IServiceCollection AddStaticPeerDiscovery(this IServiceCollection services, Action<StaticPeerConfiguration> configureAction)
+    {
+        services.Configure(configureAction);
+        services.AddSingleton<IPeerDiscoveryProvider, StaticPeerDiscoveryProvider>();
+        return services;
+    }
+
+
+    public static IServiceCollection AddStaticPeerDiscovery(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<StaticPeerConfiguration>(configuration);
+        services.AddSingleton<IPeerDiscoveryProvider, StaticPeerDiscoveryProvider>();
         return services;
     }
 }

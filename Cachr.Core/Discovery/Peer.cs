@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 
 namespace Cachr.Core.Discovery;
 
-public record struct Peer(Guid Id, ImmutableArray<string> EndPoints, string ProtocolPartition)
+public sealed record Peer(Guid Id, ImmutableArray<string> EndPoints, string ProtocolPartition)
 {
     public static Peer Create(IEnumerable<string> endPoints, string protocolPartition = "")
     {
