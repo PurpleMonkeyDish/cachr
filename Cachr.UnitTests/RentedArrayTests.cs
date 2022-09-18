@@ -1,11 +1,10 @@
 using System;
-using Cachr.Core;
 using Cachr.Core.Buffers;
 using Xunit;
 
 namespace Cachr.UnitTests;
 
-public class RentedArrayTests
+public sealed class RentedArrayTests
 {
     [Fact]
     public void RentedArrayCanBeCreatedWithNullPool()
@@ -14,7 +13,7 @@ public class RentedArrayTests
         using var rented = RentedArray<byte>.FromPool(expectedSize, null);
         for (var x = 0; x < expectedSize; x++)
         {
-            rented.ArraySegment.Array![x] = (byte) x;
+            rented.ArraySegment.Array![x] = (byte)x;
         }
 
         Assert.False(rented.IsPooled);
@@ -52,16 +51,16 @@ public class RentedArrayTests
     {
         const int expectedSize = 10;
         using var rented = RentedArray<byte>.FromDefaultPool(expectedSize);
-        var readOnlyMemory = (ReadOnlyMemory<byte>) rented;
+        var readOnlyMemory = (ReadOnlyMemory<byte>)rented;
         Assert.Equal(readOnlyMemory, rented.ReadOnlyMemory);
     }
-    
+
     [Fact]
     public void RentedArrayCanBeCastToArraySegment()
     {
         const int expectedSize = 10;
         using var rented = RentedArray<byte>.FromDefaultPool(expectedSize);
-        var readOnlyMemory = (ArraySegment<byte>) rented;
+        var readOnlyMemory = (ArraySegment<byte>)rented;
         Assert.Equal(readOnlyMemory, rented.ArraySegment);
     }
 

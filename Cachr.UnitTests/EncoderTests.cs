@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Cachr.Core;
 using Cachr.Core.Messages;
 using Cachr.Core.Messages.Encoder;
@@ -21,13 +19,6 @@ public class EncoderTests
     public EncoderTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-    }
-
-    public static class NonNullStringGenerator
-    {
-        // ReSharper disable once UnusedMember.Global
-        public static Arbitrary<string> Generate() =>
-            Arb.Default.String().Filter(s => s is not null);
     }
 
     public static IEnumerable<object[]> GetDistributedCacheTestMessages()
@@ -63,7 +54,7 @@ public class EncoderTests
         Assert.NotNull(decodedMessage);
         var typedDecodedMessage = Assert.IsAssignableFrom<GetKeyDataResponseDistributedCacheMessage>(decodedMessage);
         Assert.Equal(message.Key, typedDecodedMessage.Key);
-        Assert.Equal((IEnumerable<byte>) message.Data, (IEnumerable<byte>) typedDecodedMessage.Data);
+        Assert.Equal(message.Data, (IEnumerable<byte>)typedDecodedMessage.Data);
         _testOutputHelper.WriteLine(
             $"Encoded payload was {encodedMessage.ArraySegment.Count} bytes, for key length {message.Key.Length} and data length: {message.Data.Length}");
     }
@@ -79,20 +70,30 @@ public class EncoderTests
         Assert.Equal(message, decodedMessage);
     }
 
-    internal class TestMessage : IDistributedCacheMessage
-    {
-        public DistributedCacheMessageType Type { get; } = (DistributedCacheMessageType) 1000;
-        public Guid Id { get; } = Guid.NewGuid();
-        public int MaximumWireSize { get; } = 0;
-        public void Encode(BinaryWriter writer)
-        {
-        }
-    }
-
     [Fact]
     public void DecoderThrowsNotImplementedExceptionWhenUnknownMessageType()
     {
         using var encodedMessage = DistributedCacheMessageEncoder.Encode(new TestMessage());
         Assert.Throws<NotImplementedException>(() => DistributedCacheMessageEncoder.Decode(encodedMessage));
+    }
+
+    public static class NonNullStringGenerator
+    {
+        // ReSharper disable once UnusedMember.Global
+        public static Arbitrary<string> Generate()
+        {
+            return Arb.Default.String().Filter(s => s is not null);
+        }
+    }
+
+    internal sealed class TestMessage : IDistributedCacheMessage
+    {
+        public DistributedCacheMessageType Type { get; } = (DistributedCacheMessageType)1000;
+        public Guid Id { get; } = Guid.NewGuid();
+        public int MaximumWireSize { get; } = 0;
+
+        public void Encode(BinaryWriter writer)
+        {
+        }
     }
 }

@@ -1,20 +1,13 @@
 name: "build"
-on: 
+on:
   push:
-    branches: 
+    branches:
       - 'main'
   pull_request: { }
+concurrency:
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
 jobs:
-  pre_build_comment:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Add PR Comment
-        uses: thollander/actions-comment-pull-request@v1
-        with:
-          message: |
-            Thank you for your pull request, your build has started!
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   restore:
     runs-on: ubuntu-latest
     steps:
@@ -42,6 +35,32 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet test
+  benchmark:
+    runs-on: ubuntu-latest
+    needs: restore
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '6.0.x'
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
+      - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- -j short
+      - name: Store DuplicateTrackerBenchmarks result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          tool: 'benchmarkdotnet'
+          output-file-path: BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
+          alert-threshold: '200%'
+          comment-on-alert: true
+          comment-always: true
+          fail-on-alert: true
+          auto-push: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
   build_test_report:
     runs-on: ubuntu-latest
     needs: restore
@@ -68,7 +87,7 @@ jobs:
           gist_token: ${{ secrets.GIST_TOKEN }}
   build_release_configuration:
     runs-on: ubuntu-latest
-    needs: test
+    needs: restore
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-dotnet@v2
@@ -81,27 +100,12 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release -property:WarningLevel=0
-  build_status_comment_success:
-    runs-on: ubuntu-latest
-    if: success() && github.event_name == 'pull_request'
-    needs:
-      - build_release_configuration
-      - build_test_report
-      - pre_build_comment
-    steps:
-      - name: Edit PR comment
-        uses: thollander/actions-comment-pull-request@v1
-        with:
-          message: 'Your build has passed! Thank you for your contribution, you will be able to merge once this PR is approved'
-          comment_includes: 'your build has started'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build_status_comment_failed:
     runs-on: ubuntu-latest
     if: failure() && github.event_name == 'pull_request'
     needs:
       - build_release_configuration
-      - build_test_report
-      - pre_build_comment
+      - test
     steps:
       - name: Edit PR comment
         uses: thollander/actions-comment-pull-request@v1

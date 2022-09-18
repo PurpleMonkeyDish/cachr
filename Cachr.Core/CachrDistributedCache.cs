@@ -1,57 +1,131 @@
-using System.Runtime.CompilerServices;
-using System.Text;
 using Cachr.Core.Messages;
-using Cachr.Core.Messages.Bus;
 using Cachr.Core.Messages.Encoder;
+using Cachr.Core.Messaging;
 using Cachr.Core.Storage;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Cachr.Core;
 
-public class CachrDistributedCache : ICachrDistributedCache
+public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
 {
-    private readonly ICacheStorage _storage;
-    private readonly ICacheBus _cacheBus;
+    private readonly ISubscriptionToken _subscriptionToken;
     private readonly IOptions<CachrDistributedCacheOptions> _options;
+    private readonly ICacheStorage _storage;
+    private readonly IMessageBus<OutboundCacheMessageEnvelope> _messageBus;
 
-    public CachrDistributedCache(
-        ICacheStorage storage, 
-        ICacheBus cacheBus, 
-        IOptions<CachrDistributedCacheOptions> options
+    public CachrDistributedCache
+    (
+        ICacheStorage storage,
+        IOptions<CachrDistributedCacheOptions> options,
+        IMessageBus<InboundCacheMessageEnvelope> inboundMessageBus,
+        IMessageBus<OutboundCacheMessageEnvelope> outboundMessageBus
         )
     {
         _storage = storage;
-        _cacheBus = cacheBus;
         _options = options;
-        _cacheBus.DataReceived += OnDataReceived;
+        _subscriptionToken = inboundMessageBus.Subscribe(OnCacheMessageReceived);
+        _messageBus = outboundMessageBus;
     }
 
-    private void OnDataReceived(object? sender, CacheBusDataReceivedEventArgs e)
+    private async Task OnCacheMessageReceived(InboundCacheMessageEnvelope envelope)
     {
-        using (e)
-        {
-            var message = e.Decode();
-            HandleMessage(message, e);
-        }
+        if (envelope.Target != null && envelope.Target != NodeIdentity.Id)
+            return;
+        HandleMessage(DistributedCacheMessageEncoder.Decode(envelope.Data), envelope.Sender);
     }
 
-    private void HandleMessage(IDistributedCacheMessage message, CacheBusDataReceivedEventArgs cacheBusDataReceivedEventArgs)
+    public void BeginPreload()
+    {
+    }
+
+    public byte[]? Get(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        return _storage.Get(key);
+    }
+
+    public Task<byte[]?> GetAsync(string key, CancellationToken token = new())
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        return Task.FromResult(_storage.Get(key));
+    }
+
+    public void Set(string key, byte[] value, DistributedCacheEntryOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        SetInternal(key, value, options);
+    }
+
+    public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options,
+        CancellationToken token = new())
+    {
+        SetInternal(key, value, options);
+        return Task.CompletedTask;
+    }
+
+    public void Refresh(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+    }
+
+    public Task RefreshAsync(string key, CancellationToken token = new())
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        _storage.TryGet(key, out _);
+        return Task.CompletedTask;
+    }
+
+    public void Remove(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        _storage.Remove(key);
+        NotifyRemoved(key);
+    }
+
+    private async Task NotifyRemovedAsync(string key)
+    {
+        await BroadcastAsync(new KeyDeletedDistributedCacheMessage(key)).ConfigureAwait(false);
+    }
+
+    private void NotifyRemoved(string key)
+    {
+        NotifyRemovedAsync(key).ContinueWith(async t =>
+        {
+            try
+            {
+                await t.ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignored.
+            }
+        });
+    }
+
+    public async Task RemoveAsync(string key, CancellationToken token = new())
+    {
+        Remove(key);
+        await NotifyRemovedAsync(key).ConfigureAwait(false);
+    }
+
+    private async Task HandleMessage(
+        IDistributedCacheMessage message,
+        Guid senderId
+        )
     {
         switch (message.Type)
         {
             case DistributedCacheMessageType.GetKeys:
-                HandleTypedMessage((GetKeysDistributedCacheMessage)message, cacheBusDataReceivedEventArgs);
+                await HandleTypedMessage((GetKeysDistributedCacheMessage)message, senderId).ConfigureAwait(false);
                 break;
-
             case DistributedCacheMessageType.GetKeyData:
-                HandleTypedMessage((GetKeyDataDistributedCacheMessage)message, cacheBusDataReceivedEventArgs);
+                await HandleTypedMessage((GetKeyDataDistributedCacheMessage)message, senderId).ConfigureAwait(false);
                 break;
             case DistributedCacheMessageType.NoOperation:
                 break;
             case DistributedCacheMessageType.GetKeyResponse:
-                HandleTypedMessage((GetKeysResponseDistributedCacheMessage)message);
+                await HandleTypedMessage((GetKeysResponseDistributedCacheMessage)message).ConfigureAwait(false);
                 break;
             case DistributedCacheMessageType.GetKeyDataResponse:
                 HandleTypedMessage((GetKeyDataResponseDistributedCacheMessage)message);
@@ -72,14 +146,19 @@ public class CachrDistributedCache : ICachrDistributedCache
         TimeSpan? slidingExpiration = null;
         DateTimeOffset? absoluteExpiration = null;
         if (message.SlidingTimeToLiveMilliseconds > 0)
+        {
             slidingExpiration = TimeSpan.FromMilliseconds(message.SlidingTimeToLiveMilliseconds);
+        }
 
         if (message.ExpirationTimeStampUnixMilliseconds > 0)
         {
             absoluteExpiration = DateTimeOffset.FromUnixTimeMilliseconds(message.ExpirationTimeStampUnixMilliseconds);
-            if (absoluteExpiration < DateTimeOffset.Now) return;
+            if (absoluteExpiration < DateTimeOffset.Now)
+            {
+                return;
+            }
         }
-        
+
         _storage.Set(message.Key, message.Data, slidingExpiration, absoluteExpiration);
     }
 
@@ -99,53 +178,64 @@ public class CachrDistributedCache : ICachrDistributedCache
         _storage.Set(message.Key, message.Data, null, DateTimeOffset.Now.Add(GetAbsoluteTimeToLiveForPreload()));
     }
 
-    private void HandleTypedMessage(GetKeysResponseDistributedCacheMessage message)
+    private async Task HandleTypedMessage(GetKeysResponseDistributedCacheMessage message)
     {
-        var payload = DistributedCacheMessageEncoder.Encode(
-            new GetKeyDataDistributedCacheMessage(message.Key)
-        );
-        _cacheBus.SendToOneRandom(payload);
+        await SendToRandomAsync(new GetKeyDataDistributedCacheMessage(message.Key)).ConfigureAwait(false);
     }
 
-    private void HandleTypedMessage(GetKeyDataDistributedCacheMessage message, CacheBusDataReceivedEventArgs cacheBusDataReceivedEventArgs)
+    private async Task HandleTypedMessage(GetKeyDataDistributedCacheMessage message, Guid senderId)
     {
-        if (!_storage.TryGet(message.Key, out var data)) return;
-        
-        var reply = DistributedCacheMessageEncoder.Encode(new GetKeyDataResponseDistributedCacheMessage(message.Key, data));
-        cacheBusDataReceivedEventArgs.Reply(reply);
+        if (!_storage.TryGet(message.Key, out var data))
+        {
+            return;
+        }
+
+        var reply = new GetKeyDataResponseDistributedCacheMessage(message.Key, data);
+        await SendToAsync(senderId, reply).ConfigureAwait(false);
     }
 
-    private void HandleTypedMessage(GetKeysDistributedCacheMessage message, CacheBusDataReceivedEventArgs cacheBusDataReceivedEventArgs)
+    private async Task HandleTypedMessage(
+        GetKeysDistributedCacheMessage message,
+        Guid senderId
+        )
     {
         foreach (var key in _storage.Keys)
         {
-            cacheBusDataReceivedEventArgs.Reply(DistributedCacheMessageEncoder.Encode(new GetKeysResponseDistributedCacheMessage(key)));
+            await SendToAsync(senderId, new GetKeysResponseDistributedCacheMessage(key)).ConfigureAwait(false);
         }
     }
 
-    public void BeginPreload()
+    private async Task SendToRandomAsync(IDistributedCacheMessage message)
     {
-        _cacheBus.SendToOneRandom(DistributedCacheMessageEncoder.Encode(GetKeysDistributedCacheMessage.Instance));
-    }
-    public byte[]? Get(string key)
-    {
-        ArgumentNullException.ThrowIfNull(key);
-        return _storage.Get(key);
+        var encodedMessage = DistributedCacheMessageEncoder.Encode(message);
+        await _messageBus.SendToRandomAsync(new OutboundCacheMessageEnvelope(null, encodedMessage)).ConfigureAwait(false);
     }
 
-    public Task<byte[]?> GetAsync(string key, CancellationToken token = new CancellationToken())
+    private async Task BroadcastAsync(IDistributedCacheMessage message)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        return Task.FromResult(_storage.Get(key));
+        var encodedMessage = DistributedCacheMessageEncoder.Encode(message);
+        await _messageBus.BroadcastAsync(new OutboundCacheMessageEnvelope(null, encodedMessage)).ConfigureAwait(false);
     }
 
-    public void Set(string key, byte[] value, DistributedCacheEntryOptions? options)
+    private async Task SendToAsync(Guid targetId, IDistributedCacheMessage message)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        SetInternal(key, value, options);
+        var encodedMessage = DistributedCacheMessageEncoder.Encode(message);
+        await _messageBus.BroadcastAsync(new OutboundCacheMessageEnvelope(targetId, encodedMessage)).ConfigureAwait(false);
+    }
+
+    private async Task SetInternalAsync(string key, byte[] value, DistributedCacheEntryOptions? options)
+    {
+        var (slidingExpiration, absoluteExpiration) = SetInternalCommon(key, value, options);
+        await NotifyKeySetAsync(key, value, slidingExpiration, absoluteExpiration).ConfigureAwait(false);
     }
 
     private void SetInternal(string key, byte[] value, DistributedCacheEntryOptions? options)
+    {
+        var (slidingExpiration, absoluteExpiration) = SetInternalCommon(key, value, options);
+        NotifyKeySet(key, value, slidingExpiration, absoluteExpiration);
+    }
+
+    private (TimeSpan? slidingExpiration, DateTimeOffset? absoluteExpiration) SetInternalCommon(string key, byte[] value, DistributedCacheEntryOptions? options)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
@@ -156,51 +246,44 @@ public class CachrDistributedCache : ICachrDistributedCache
             absoluteExpiration = options.AbsoluteExpiration;
             slidingExpiration = options.SlidingExpiration;
             if (absoluteExpiration is null && options.AbsoluteExpirationRelativeToNow is not null)
+            {
                 absoluteExpiration = DateTimeOffset.Now.Add(options.AbsoluteExpirationRelativeToNow.Value);
+            }
         }
 
         _storage.Set(key, value, slidingExpiration, absoluteExpiration);
-        NotifyKeySet(key, value, slidingExpiration, absoluteExpiration);
+        return (slidingExpiration, absoluteExpiration);
     }
 
     private void NotifyKeySet(string key, byte[] value, TimeSpan? slidingExpiration, DateTimeOffset? absoluteExpiration)
     {
-        var slidingExpirationMilliseconds = (int) (slidingExpiration?.TotalMilliseconds ?? 0);
-        var absoluteExpirationTimestampMilliseconds = (long) (absoluteExpiration?.ToUnixTimeMilliseconds() ?? 0);
-        var message = new KeySetDistributedCacheMessage(key, value, slidingExpirationMilliseconds, absoluteExpirationTimestampMilliseconds);
-        var encodedMessage = DistributedCacheMessageEncoder.Encode(message);
-        _cacheBus.Broadcast(encodedMessage);
+        // Fling this off into oblivion
+        // There's no follow up, and the wait is a lock wait only.
+        NotifyKeySetAsync(key, value, slidingExpiration, absoluteExpiration)
+            .ContinueWith(async t =>
+            {
+                try
+                {
+                    await t.ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Ignored.
+                }
+            }).Unwrap();
     }
 
-    public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options,
-        CancellationToken token = new CancellationToken())
+    private async Task NotifyKeySetAsync(string key, byte[] value, TimeSpan? slidingExpiration, DateTimeOffset? absoluteExpiration)
     {
-        SetInternal(key, value, options);
-        return Task.CompletedTask;
+        var slidingExpirationMilliseconds = (int)(slidingExpiration?.TotalMilliseconds ?? 0);
+        var absoluteExpirationTimestampMilliseconds = absoluteExpiration?.ToUnixTimeMilliseconds() ?? 0;
+        var message = new KeySetDistributedCacheMessage(key, value, slidingExpirationMilliseconds,
+            absoluteExpirationTimestampMilliseconds);
+        await BroadcastAsync(message).ConfigureAwait(false);
     }
 
-    public void Refresh(string key)
+    public void Dispose()
     {
-        ArgumentNullException.ThrowIfNull(key);
-    }
-
-    public Task RefreshAsync(string key, CancellationToken token = new CancellationToken())
-    {
-        ArgumentNullException.ThrowIfNull(key);
-        return Task.CompletedTask;
-    }
-
-    public void Remove(string key)
-    {
-        ArgumentNullException.ThrowIfNull(key);
-        _storage.Remove(key);
-        var message = new KeyDeletedDistributedCacheMessage(key);
-        _cacheBus.Broadcast(DistributedCacheMessageEncoder.Encode(message));
-    }
-
-    public Task RemoveAsync(string key, CancellationToken token = new CancellationToken())
-    {
-        Remove(key);
-        return Task.CompletedTask;
+        _subscriptionToken.Dispose();
     }
 }

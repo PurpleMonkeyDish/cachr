@@ -2,15 +2,8 @@ using System.Text;
 
 namespace Cachr.Core.Messages;
 
-public record KeySetDistributedCacheMessage : IDistributedCacheMessage
+public sealed record KeySetDistributedCacheMessage : IDistributedCacheMessage
 {
-    public DistributedCacheMessageType Type { get; } = DistributedCacheMessageType.KeySet;
-    public Guid Id { get; } = Guid.NewGuid();
-    public int MaximumWireSize { get; }
-    public string Key { get; }
-    public byte[] Data { get; }
-    public int SlidingTimeToLiveMilliseconds { get; }
-    public long ExpirationTimeStampUnixMilliseconds { get; }
     public KeySetDistributedCacheMessage(string key, byte[] data, int slidingTimeToLiveMilliseconds,
         long expirationTimeStampUnixMilliseconds)
     {
@@ -30,17 +23,25 @@ public record KeySetDistributedCacheMessage : IDistributedCacheMessage
     public KeySetDistributedCacheMessage(BinaryReader reader, Guid id)
         : this
         (
-            reader.ReadString(), 
+            reader.ReadString(),
             reader.ReadBytes
             (
                 reader.Read7BitEncodedInt()
-            ), 
+            ),
             reader.Read7BitEncodedInt(),
             reader.Read7BitEncodedInt64()
         )
     {
         Id = id;
     }
+
+    public string Key { get; }
+    public byte[] Data { get; }
+    public int SlidingTimeToLiveMilliseconds { get; }
+    public long ExpirationTimeStampUnixMilliseconds { get; }
+    public DistributedCacheMessageType Type { get; } = DistributedCacheMessageType.KeySet;
+    public Guid Id { get; } = Guid.NewGuid();
+    public int MaximumWireSize { get; }
 
 
     public void Encode(BinaryWriter writer)
