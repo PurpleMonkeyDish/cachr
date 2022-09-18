@@ -103,7 +103,6 @@ jobs:
     needs:
       - build_release_configuration
       - build_test_report
-      - pre_build_comment
     steps:
       - name: Edit PR comment
         uses: thollander/actions-comment-pull-request@v1
