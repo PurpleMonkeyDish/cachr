@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1663528043375,
+  "lastUpdate": 1663528045529,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark": [
@@ -218,6 +218,80 @@ window.BENCHMARK_DATA = {
             "value": 541217.5013020834,
             "unit": "ns",
             "range": "± 2031.1038593110984"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "jasoncouture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "name": "jasoncouture",
+            "username": "jasoncouture"
+          },
+          "id": "4cd2bfc1908a57f84b241c65874cd81621929f05",
+          "message": "Introduce functionality required for peering",
+          "timestamp": "2022-09-18T18:29:16Z",
+          "url": "https://github.com/jasoncouture/cachr/pull/21/commits/4cd2bfc1908a57f84b241c65874cd81621929f05"
+        },
+        "date": 1663528044998,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.EndToEndCachePerformanceAsync",
+            "value": 373952.41064453125,
+            "unit": "ns",
+            "range": "± 35535.37804430578"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmark",
+            "value": 3033.7046140034995,
+            "unit": "ns",
+            "range": "± 200.869888766011"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmarkAsync",
+            "value": 4158.32975769043,
+            "unit": "ns",
+            "range": "± 524.6401925932867"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmark",
+            "value": 71.40053991476695,
+            "unit": "ns",
+            "range": "± 0.3017956478584961"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmarkAsync",
+            "value": 96.48887165387471,
+            "unit": "ns",
+            "range": "± 0.6481023892105063"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmark",
+            "value": 3011.7575658162436,
+            "unit": "ns",
+            "range": "± 135.20086225085097"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmarkAsync",
+            "value": 3658.1290334065757,
+            "unit": "ns",
+            "range": "± 571.1720637593415"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveBenchmark",
+            "value": 5710.852980295817,
+            "unit": "ns",
+            "range": "± 447.97276696872103"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveAsyncBenchmark",
+            "value": 4970.3974533081055,
+            "unit": "ns",
+            "range": "± 1439.1203796126338"
           }
         ]
       }
