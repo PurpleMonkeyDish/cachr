@@ -455,3 +455,4 @@ $RECYCLE.BIN/
 
 **/BenchmarkDotNet.Artifacts/
 
+./report.json
