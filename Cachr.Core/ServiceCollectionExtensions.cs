@@ -53,4 +53,21 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPeerDiscoveryProvider, StaticPeerDiscoveryProvider>();
         return services;
     }
+
+
+
+    public static IServiceCollection AddDnsDiscovery(this IServiceCollection services, Action<DnsDiscoveryConfiguration> configureAction)
+    {
+        services.Configure(configureAction);
+        services.AddSingleton<IPeerDiscoveryProvider, DnsPeerDiscoveryProvider>();
+        return services;
+    }
+
+
+    public static IServiceCollection AddDnsDiscovery(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<DnsDiscoveryConfiguration>(configuration);
+        services.AddSingleton<IPeerDiscoveryProvider, DnsPeerDiscoveryProvider>();
+        return services;
+    }
 }
