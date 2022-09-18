@@ -4,14 +4,12 @@ namespace Cachr.Core.Discovery;
 
 public sealed class StaticPeerDiscoveryProvider : IPeerDiscoveryProvider
 {
-    private readonly IOptionsMonitor<StaticPeerConfiguration> _options;
     private StaticPeerConfiguration _staticPeerConfiguration;
     private readonly IDisposable _onChangeSubscription;
 
     public StaticPeerDiscoveryProvider(IOptionsMonitor<StaticPeerConfiguration> options)
     {
-        _options = options;
-        _onChangeSubscription = _options.OnChange(OnUrlListChanged);
+        _onChangeSubscription = options.OnChange(OnUrlListChanged);
         _staticPeerConfiguration = options.CurrentValue;
     }
 

@@ -6,14 +6,12 @@ namespace Cachr.Core.Discovery;
 
 public sealed class DnsPeerDiscoveryProvider : IPeerDiscoveryProvider, IDisposable
 {
-    private readonly IOptionsMonitor<DnsDiscoveryConfiguration> _options;
     private DnsDiscoveryConfiguration _dnsDiscoveryConfiguration;
     private readonly IDisposable _onChangeSubscription;
 
     public DnsPeerDiscoveryProvider(IOptionsMonitor<DnsDiscoveryConfiguration> options)
     {
-        _options = options;
-        _onChangeSubscription = _options.OnChange(OnConfigurationChanged);
+        _onChangeSubscription = options.OnChange(OnConfigurationChanged);
         _dnsDiscoveryConfiguration = options.CurrentValue;
     }
 
