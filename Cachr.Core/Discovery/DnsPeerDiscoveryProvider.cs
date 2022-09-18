@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cachr.Core.Discovery;
 
-public class DnsPeerDiscoveryProvider : IPeerDiscoveryProvider, IDisposable
+public sealed class DnsPeerDiscoveryProvider : IPeerDiscoveryProvider, IDisposable
 {
     private readonly IOptionsMonitor<DnsDiscoveryConfiguration> _options;
     private DnsDiscoveryConfiguration _dnsDiscoveryConfiguration;

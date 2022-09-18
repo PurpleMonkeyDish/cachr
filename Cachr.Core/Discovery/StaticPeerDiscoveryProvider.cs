@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cachr.Core.Discovery;
 
-public class StaticPeerDiscoveryProvider : IPeerDiscoveryProvider
+public sealed class StaticPeerDiscoveryProvider : IPeerDiscoveryProvider
 {
     private readonly IOptionsMonitor<StaticPeerConfiguration> _options;
     private StaticPeerConfiguration _staticPeerConfiguration;
