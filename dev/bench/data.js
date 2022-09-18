@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1663507875659,
+  "lastUpdate": 1663510421995,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark": [
@@ -616,6 +616,74 @@ window.BENCHMARK_DATA = {
             "value": 771487.7561848959,
             "unit": "ns",
             "range": "± 7706.956605858901"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "jasoncouture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "name": "jasoncouture",
+            "username": "jasoncouture"
+          },
+          "id": "f6f3df60b6ace6bd80f41c856a722173d829b0df",
+          "message": "Add end to end benchmarks",
+          "timestamp": "2022-09-11T23:29:20Z",
+          "url": "https://github.com/jasoncouture/cachr/pull/20/commits/f6f3df60b6ace6bd80f41c856a722173d829b0df"
+        },
+        "date": 1663510420826,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAddEntry(range: 10)",
+            "value": 2195.2636922200522,
+            "unit": "ns",
+            "range": "± 2.178910149418062"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorDuplicate(range: 10)",
+            "value": 1884.4754651387532,
+            "unit": "ns",
+            "range": "± 38.3160300590581"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAllShardsDuplicateDetection(range: 10)",
+            "value": 653927.18359375,
+            "unit": "ns",
+            "range": "± 1312.5993876928628"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.LockContention(range: 10)",
+            "value": 19666.97917683919,
+            "unit": "ns",
+            "range": "± 1713.705145153295"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAddEntry(range: 1000)",
+            "value": 514958.2880859375,
+            "unit": "ns",
+            "range": "± 2652.0193486070643"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorDuplicate(range: 1000)",
+            "value": 170069.59912109375,
+            "unit": "ns",
+            "range": "± 389.7428176121286"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAllShardsDuplicateDetection(range: 1000)",
+            "value": 65974140.416666664,
+            "unit": "ns",
+            "range": "± 105337.07350582146"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.LockContention(range: 1000)",
+            "value": 832802.4186197916,
+            "unit": "ns",
+            "range": "± 10157.989935142743"
           }
         ]
       }
