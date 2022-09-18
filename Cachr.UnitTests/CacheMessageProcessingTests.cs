@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Cachr.UnitTests;
 
-public class JsonSerializationTests
+public sealed class JsonSerializationTests
 {
 
     public static IEnumerable<object[]> GenerateSerializerTestCases()
