@@ -61,6 +61,7 @@ jobs:
           fail-on-alert: true
           auto-push: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: ''
       - name: Store EndToEndBenchmarks result
         uses: rhysd/github-action-benchmark@v1
         with:
@@ -72,6 +73,7 @@ jobs:
           fail-on-alert: true
           auto-push: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: '''
   build_test_report:
     runs-on: ubuntu-latest
     needs: restore
