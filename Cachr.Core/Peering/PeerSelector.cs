@@ -69,7 +69,7 @@ public sealed class PeerSelector : IPeerSelector
             .Distinct()
             .ToHashSet();
 
-        return allPeersArray.All(x => peerSet.Contains(x.Peer.Id));
+        return peerSet.Count != 0 && allPeersArray.All(x => peerSet.Contains(x.Peer.Id));
     }
 
     private static IEnumerable<PeerStateUpdateMessage> SelectNewPeers(
