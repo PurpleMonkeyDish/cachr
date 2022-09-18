@@ -7,7 +7,7 @@ public interface IDuplicateTracker<T>
     bool IsDuplicate(T item);
 }
 
-public class DuplicateTracker<T> : IDuplicateTracker<T>
+public sealed class DuplicateTracker<T> : IDuplicateTracker<T>
 {
     private const int Shards = 64;
 

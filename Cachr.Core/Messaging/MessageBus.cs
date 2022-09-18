@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cachr.Core.Messaging;
 
-public class MessageBus<T> : IMessageBus<T>, IDisposable
+public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 {
     private readonly Channel<T> _broadcastMessages;
 
