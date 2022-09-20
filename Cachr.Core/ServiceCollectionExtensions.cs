@@ -19,7 +19,6 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IPeerDiscoveryProvider, DefaultPeerDiscoveryProvider>();
         services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
         services.AddSingleton(typeof(IMessageBus<>), typeof(MessageBus<>));
-        services.AddSingleton(typeof(IDuplicateTracker<>), typeof(DuplicateTracker<>));
         services.AddSingleton<IPeerSelector, PeerSelector>();
         services.AddSingleton<IPeerStatusTracker, PeerStatusTracker>();
     }
