@@ -43,6 +43,7 @@ public sealed class ServiceCollectionTests
     {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        serviceCollection.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         return serviceCollection;
     }
