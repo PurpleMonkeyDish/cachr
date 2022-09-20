@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 using Cachr.Core.Buffers;
 
@@ -6,34 +5,33 @@ namespace Cachr.Core.Discovery;
 
 public sealed record CacheGossipMessage(
     CacheGossipType Type,
+    Guid Id,
     Guid Sender,
     Guid? Target,
-    ImmutableArray<PeerStateUpdateMessage> PeerStateUpdates,
-   [property: JsonConverter(typeof(RentedArrayJsonConverterFactory))] RentedArray<byte>? CacheCommand
+    PeerStateUpdateMessage? PeerStateUpdate,
+    [property: JsonConverter(typeof(RentedArrayJsonConverterFactory))] RentedArray<byte>? Message
 )
 {
-    public static CacheGossipMessage Create(Guid sender, IEnumerable<PeerStateUpdateMessage> peerStateUpdates)
+    public static CacheGossipMessage Create(Guid sender, PeerStateUpdateMessage peerStateUpdate)
     {
         return new(
             CacheGossipType.PeerStateUpdate,
+            Guid.NewGuid(),
             sender,
             null,
-            peerStateUpdates is ImmutableArray<PeerStateUpdateMessage> array
-                ? array
-                : peerStateUpdates.ToImmutableArray(),
+            peerStateUpdate,
             null
         );
     }
 
-    public static CacheGossipMessage Create(Guid sender, Guid target, IEnumerable<PeerStateUpdateMessage> peerStateUpdates)
+    public static CacheGossipMessage Create(Guid sender, Guid target, PeerStateUpdateMessage peerStateUpdate)
     {
         return new CacheGossipMessage(
             CacheGossipType.PeerStateUpdate,
+            Guid.NewGuid(),
             sender,
             target,
-            peerStateUpdates is ImmutableArray<PeerStateUpdateMessage> array
-                ? array
-                : peerStateUpdates.ToImmutableArray(),
+            peerStateUpdate,
             null
         );
     }
@@ -42,9 +40,10 @@ public sealed record CacheGossipMessage(
     {
         return new(
             CacheGossipType.CacheCommand,
+            Guid.NewGuid(),
             sender,
             null,
-            ImmutableArray<PeerStateUpdateMessage>.Empty,
+            null,
             cacheCommand
         );
     }
@@ -53,9 +52,10 @@ public sealed record CacheGossipMessage(
     {
         return new(
             CacheGossipType.CacheCommand,
+            Guid.NewGuid(),
             sender,
             target,
-            ImmutableArray<PeerStateUpdateMessage>.Empty,
+            null,
             cacheCommand
         );
     }

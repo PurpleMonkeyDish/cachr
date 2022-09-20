@@ -1,6 +1,6 @@
 namespace Cachr.Core.Discovery;
 
-public class StaticPeerConfiguration
+public sealed class StaticPeerConfiguration
 {
     public string[]? BootstrapUrls { get; init; }
 }

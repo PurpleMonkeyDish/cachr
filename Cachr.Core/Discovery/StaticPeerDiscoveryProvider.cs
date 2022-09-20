@@ -2,16 +2,14 @@ using Microsoft.Extensions.Options;
 
 namespace Cachr.Core.Discovery;
 
-public class StaticPeerDiscoveryProvider : IPeerDiscoveryProvider
+public sealed class StaticPeerDiscoveryProvider : IPeerDiscoveryProvider, IDisposable
 {
-    private readonly IOptionsMonitor<StaticPeerConfiguration> _options;
     private StaticPeerConfiguration _staticPeerConfiguration;
     private readonly IDisposable _onChangeSubscription;
 
     public StaticPeerDiscoveryProvider(IOptionsMonitor<StaticPeerConfiguration> options)
     {
-        _options = options;
-        _onChangeSubscription = _options.OnChange(OnUrlListChanged);
+        _onChangeSubscription = options.OnChange(OnUrlListChanged);
         _staticPeerConfiguration = options.CurrentValue;
     }
 
@@ -21,5 +19,10 @@ public class StaticPeerDiscoveryProvider : IPeerDiscoveryProvider
     public Task<IEnumerable<string>> DiscoverPeersAsync(CancellationToken cancellationToken)
     {
         return Task.FromResult<IEnumerable<string>>(_staticPeerConfiguration?.BootstrapUrls ?? Array.Empty<string>());
+    }
+
+    public void Dispose()
+    {
+        _onChangeSubscription.Dispose();
     }
 }

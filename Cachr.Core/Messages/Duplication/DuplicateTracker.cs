@@ -4,13 +4,20 @@ namespace Cachr.Core.Messages.Duplication;
 
 public sealed class DuplicateTracker<T> : IDuplicateTracker<T>
 {
-    private const int Shards = 64;
-
-    public DuplicateTracker()
+    private readonly int _shardCount;
+    private readonly TimeSpan _trackerMaxTime;
+    private readonly int _maximumCountPerShard;
+    public DuplicateTracker(int? shardCount = null, int? maximumCountPerShard = null, TimeSpan? maxLifetime = null)
     {
-        _duplicateItemSets = new HashSet<T>[Shards];
-        _ageTrackerShards = new List<DuplicateTrackingRecord>[Shards];
-        for (var x = 0; x < Shards; x++)
+        if (shardCount <= 0) throw new ArgumentOutOfRangeException();
+        if (maximumCountPerShard <= 0) throw new ArgumentOutOfRangeException();
+        _trackerMaxTime = maxLifetime ?? DuplicateTrackerDefaults.DefaultTrackingTime;
+        _shardCount = shardCount ?? DuplicateTrackerDefaults.DefaultShardCount;
+        _maximumCountPerShard = maximumCountPerShard ?? DuplicateTrackerDefaults.DefaultMaximumCountPerShard;
+
+        _duplicateItemSets = new HashSet<T>[_shardCount];
+        _ageTrackerShards = new List<DuplicateTrackingRecord>[_shardCount];
+        for (var x = 0; x < _shardCount; x++)
         {
             _duplicateItemSets[x] = new HashSet<T>();
             _ageTrackerShards[x] = new List<DuplicateTrackingRecord>();
@@ -23,7 +30,7 @@ public sealed class DuplicateTracker<T> : IDuplicateTracker<T>
     private (HashSet<T>, List<DuplicateTrackingRecord>) GetShardFromItem([NotNull] T item)
     {
         ArgumentNullException.ThrowIfNull(item);
-        var index = Math.Abs(item.GetHashCode() % Shards);
+        var index = Math.Abs(item.GetHashCode() % _shardCount);
         return GetShard(index);
     }
 
@@ -35,10 +42,11 @@ public sealed class DuplicateTracker<T> : IDuplicateTracker<T>
     public bool IsDuplicate(T item)
     {
         var (set, ageTracker) = GetShardFromItem(item);
-        bool addedToSet = false;
+        var addedToSet = false;
         lock (set)
         {
-            if (addedToSet = set.Add(item))
+            addedToSet = set.Add(item);
+            if (addedToSet)
             {
                 ageTracker.Add(new DuplicateTrackingRecord(item, DateTimeOffset.Now));
             }
@@ -58,7 +66,7 @@ public sealed class DuplicateTracker<T> : IDuplicateTracker<T>
 
     private void PerformCleanup()
     {
-        for (var x = 0; x < Shards; x++)
+        for (var x = 0; x < _shardCount; x++)
         {
             var (shardSet, shardTracker) = GetShard(x);
             PerformCleanup(shardSet, shardTracker);
@@ -73,7 +81,7 @@ public sealed class DuplicateTracker<T> : IDuplicateTracker<T>
             {
                 if (set.Count == 0) break;
                 if (set.Count <= 1000 &&
-                    ageTracker[0].Added.AddMinutes(10) >= DateTimeOffset.Now)
+                    ageTracker[0].Added.Add(_trackerMaxTime) >= DateTimeOffset.Now)
                     break;
                 var item = ageTracker[0];
                 set.Remove(item.Item);
