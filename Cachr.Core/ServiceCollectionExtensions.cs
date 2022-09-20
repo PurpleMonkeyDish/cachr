@@ -7,6 +7,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Cachr.Core;
 
@@ -14,13 +15,17 @@ public static class ServiceCollectionExtensions
 {
     private static void AddCoreServices(IServiceCollection services)
     {
-        services.TryAddSingleton<ICacheStorage, ShardedMemoryCacheStorage>();
-        services.TryAddSingleton<ICachrDistributedCache, CachrDistributedCache>();
+        // Try add is used for services we expect to be replaced, before or after we're called.
         services.TryAddSingleton<IPeerDiscoveryProvider, DefaultPeerDiscoveryProvider>();
+        services.TryAddSingleton<IGossipTransportProvider, NoOpGossipTransportProvider>();
+        services.AddSingleton<IHostedService, GossipTransportManagerService>();
+        services.AddSingleton<ICacheStorage, ShardedMemoryCacheStorage>();
+        services.AddSingleton<ICachrDistributedCache, CachrDistributedCache>();
         services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
         services.AddSingleton(typeof(IMessageBus<>), typeof(MessageBus<>));
         services.AddSingleton<IPeerSelector, PeerSelector>();
         services.AddSingleton<IPeerStatusTracker, PeerStatusTracker>();
+        services.AddSingleton<IPeerMessagingHandler, PeerMessagingHandler>();
     }
 
     public static IServiceCollection AddCachr(this IServiceCollection services, IConfiguration configuration)
