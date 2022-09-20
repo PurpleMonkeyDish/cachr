@@ -38,12 +38,11 @@ public class EndToEndBenchmarks
         private readonly ISubscriptionToken _subscriptionToken;
         public CachrMessageReflector(
             IMessageBus<OutboundCacheMessageEnvelope> outboundMessageBus,
-            IMessageBus<InboundCacheMessageEnvelope> inboundMessageBus,
-            IDuplicateTracker<Guid> duplicateTracker
-            )
+            IMessageBus<InboundCacheMessageEnvelope> inboundMessageBus
+        )
         {
             _inboundMessageBus = inboundMessageBus;
-            _duplicateTracker = duplicateTracker;
+            _duplicateTracker = new DuplicateTracker<Guid>();
             _subscriptionToken = outboundMessageBus.Subscribe(OnOutboundMessage);
         }
 
