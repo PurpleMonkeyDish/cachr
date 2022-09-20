@@ -39,6 +39,20 @@ public sealed class ServiceCollectionTests
         Assert.Same(cachrInterface, frameworkInterface);
     }
 
+    [Fact]
+    public void AllServicesCanBeResolved()
+    {
+        var serviceCollection = GetServiceCollection();
+        serviceCollection.AddCachr(c => { });
+        using var serviceProvider = serviceCollection.BuildServiceProvider();
+        foreach (var serviceDescriptor in serviceCollection)
+        {
+            if (serviceDescriptor.ServiceType.IsGenericTypeDefinition) continue;
+            var result = serviceProvider.GetService(serviceDescriptor.ServiceType);
+            Assert.NotNull(result);
+        }
+    }
+
     private static IServiceCollection GetServiceCollection()
     {
         var serviceCollection = new ServiceCollection();
