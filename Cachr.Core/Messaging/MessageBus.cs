@@ -7,8 +7,6 @@ namespace Cachr.Core.Messaging;
 public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 {
     private readonly Channel<T> _broadcastMessages;
-    private static readonly bool s_typeIsDisposable = typeof(T).IsAssignableTo(typeof(IDisposable)) || typeof(T).IsAssignableTo(typeof(IAsyncDisposable));
-    private static readonly bool s_typeIsICompletableMessage = typeof(T).IsAssignableTo(typeof(ICompletableMessage));
     private readonly Task _broadcastTask;
 
 
@@ -99,6 +97,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                 {
                     await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
+
                 await CompleteMessage(message);
             }
         }
@@ -110,15 +109,12 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
     private static async ValueTask CompleteMessage(T message)
     {
         if (message is null) return;
-        if (!(s_typeIsDisposable || s_typeIsICompletableMessage)) return;
-        if (s_typeIsICompletableMessage)
-        {
-            var completable = (ICompletableMessage)message;
-            await completable.CompleteAsync();
-        }
-        if(s_typeIsDisposable)
-            await DisposeMessage(message);
+
+        var completable = (ICompletableMessage)message;
+        await completable.CompleteAsync();
+        await DisposeMessage(message);
     }
+
     private static async ValueTask DisposeMessage(T message)
     {
         switch (message)
@@ -131,6 +127,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                 break;
         }
     }
+
     private async Task RandomTargetMessageProcessor()
     {
         await Task.Yield();
