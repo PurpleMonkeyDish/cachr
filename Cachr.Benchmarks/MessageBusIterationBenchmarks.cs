@@ -40,7 +40,7 @@ public class MessageBusIterationBenchmarks
     private const int MessageCount = 100;
     private const int SubscriberCount = 10000;
 
-    [Benchmark]
+    [Benchmark(OperationsPerInvoke = MessageCount)]
     public async Task BroadcastAsyncBenchmark()
     {
         await Task.WhenAll(
@@ -59,7 +59,7 @@ public class MessageBusIterationBenchmarks
     }
 
 
-    [Benchmark]
+    [Benchmark(OperationsPerInvoke = MessageCount)]
     public async Task SendToAsyncBenchmark()
     {
         await Task.WhenAll(Enumerable.Range(0, MessageCount).Select(i => _messageBus!
