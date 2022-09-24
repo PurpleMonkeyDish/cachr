@@ -56,6 +56,8 @@ public sealed class RentedArray<T> : IDisposable
         }
     }
 
+    public int Length => ArraySegment.Count;
+
     public ArraySegment<T> ArraySegment
     {
         get
