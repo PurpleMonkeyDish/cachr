@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.Benchmarks", "Cachr.B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.AspNetCore", "Cachr.AspNetCore\Cachr.AspNetCore.csproj", "{B89766BD-0EC1-4247-BCB9-D73E5078F924}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.AspNetCore.TestApi", "Cachr.AspNetCore.TestApi\Cachr.AspNetCore.TestApi.csproj", "{6BD368F9-55C1-4F30-B3E0-390D61B7C9BE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{B89766BD-0EC1-4247-BCB9-D73E5078F924}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B89766BD-0EC1-4247-BCB9-D73E5078F924}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B89766BD-0EC1-4247-BCB9-D73E5078F924}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BD368F9-55C1-4F30-B3E0-390D61B7C9BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BD368F9-55C1-4F30-B3E0-390D61B7C9BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BD368F9-55C1-4F30-B3E0-390D61B7C9BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BD368F9-55C1-4F30-B3E0-390D61B7C9BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
