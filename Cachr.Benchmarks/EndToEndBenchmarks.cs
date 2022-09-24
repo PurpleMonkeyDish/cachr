@@ -46,7 +46,7 @@ public class EndToEndBenchmarks
             _subscriptionToken = outboundMessageBus.Subscribe(OnOutboundMessage);
         }
 
-        private async Task OnOutboundMessage(OutboundCacheMessageEnvelope arg)
+        private async ValueTask OnOutboundMessage(OutboundCacheMessageEnvelope arg)
         {
             if (_duplicateTracker.IsDuplicate(arg.Message.Id)) return;
             await _inboundMessageBus.BroadcastAsync(new InboundCacheMessageEnvelope(NodeIdentity.Id, arg.Target,

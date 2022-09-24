@@ -60,12 +60,12 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         ).ConfigureAwait(false);
     }
 
-    public ISubscriptionToken Subscribe(Func<T, Task> callback)
+    public ISubscriptionToken Subscribe(Func<T, ValueTask> callback, bool broadcast = true, bool targeted = true)
     {
         return AddSubscription(new SubscriptionToken<T>(callback, this));
     }
 
-    public ISubscriptionToken Subscribe(Func<T, object?, Task> callback, object? state = null)
+    public ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null, bool broadcast = true, bool targeted = true)
     {
         return AddSubscription(new SubscriptionToken<T>(callback, this, state));
     }

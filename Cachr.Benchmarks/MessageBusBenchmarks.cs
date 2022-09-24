@@ -77,7 +77,7 @@ public class MessageBusBenchmarks
         _messageBus = new MessageBus<object>(new MessageBusOptions());
         _messages = Enumerable.Range(0, MessageCount).Select(i => new AwaitableCompletableMessage()).ToArray();
         _subscriptionTokens = Enumerable.Range(0, SubscriberCount)
-            .Select(x => _messageBus.Subscribe(o => Task.CompletedTask))
+            .Select(x => _messageBus.Subscribe(o => ValueTask.CompletedTask))
             .ToArray();
     }
 

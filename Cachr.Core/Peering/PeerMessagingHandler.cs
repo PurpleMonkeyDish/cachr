@@ -27,7 +27,7 @@ public sealed class PeerMessagingHandler : IPeerMessagingHandler, IDisposable
         _inboundMessageBus = inboundMessageBus;
     }
 
-    private async Task OutboundMessageHandler(OutboundCacheMessageEnvelope outboundMessage)
+    private async ValueTask OutboundMessageHandler(OutboundCacheMessageEnvelope outboundMessage)
     {
         CacheGossipMessage cacheGossipMessage;
         var encodedMessage = DistributedCacheMessageEncoder.Encode(outboundMessage.Message);

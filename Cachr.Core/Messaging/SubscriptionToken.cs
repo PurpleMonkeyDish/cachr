@@ -2,17 +2,17 @@ namespace Cachr.Core.Messaging;
 
 public sealed class SubscriptionToken<T> : ISubscriptionToken
 {
-    private readonly Func<T, object?, Task> _callback;
+    private readonly Func<T, object?, ValueTask> _callback;
     private readonly IMessageBus<T> _messageBus;
     private readonly object? _state;
     private volatile int _disposedState;
 
-    public SubscriptionToken(Func<T, Task> callback, IMessageBus<T> messageBus) :
+    public SubscriptionToken(Func<T, ValueTask> callback, IMessageBus<T> messageBus) :
         this(CreateCallbackWrapper(callback), messageBus)
     {
     }
 
-    public SubscriptionToken(Func<T, object?, Task> callback, IMessageBus<T> messageBus, object? state = null)
+    public SubscriptionToken(Func<T, object?, ValueTask> callback, IMessageBus<T> messageBus, object? state = null)
     {
         ArgumentNullException.ThrowIfNull(callback);
         _callback = callback;
@@ -34,13 +34,13 @@ public sealed class SubscriptionToken<T> : ISubscriptionToken
         Dispose();
     }
 
-    private static Func<T, object?, Task> CreateCallbackWrapper(Func<T, Task> callback)
+    private static Func<T, object?, ValueTask> CreateCallbackWrapper(Func<T, ValueTask> callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
-        return (message, _) => callback.Invoke(message);
+        return async (message, _) => await callback.Invoke(message);
     }
 
-    public async Task<bool> TryInvokeListener(T message, bool broadcast = true)
+    public async ValueTask<bool> TryInvokeListener(T message, bool broadcast = true)
     {
         if (IsDisposed)
         {

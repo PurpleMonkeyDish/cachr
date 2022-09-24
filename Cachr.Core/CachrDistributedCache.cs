@@ -28,7 +28,7 @@ public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
         _messageBus = outboundMessageBus;
     }
 
-    private async Task OnCacheMessageReceived(InboundCacheMessageEnvelope envelope)
+    private async ValueTask OnCacheMessageReceived(InboundCacheMessageEnvelope envelope)
     {
         if (envelope.Target != null && envelope.Target != NodeIdentity.Id)
             return;
