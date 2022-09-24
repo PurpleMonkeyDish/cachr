@@ -7,7 +7,8 @@ namespace Cachr.Core.Messaging;
 public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 {
     private readonly Channel<T> _broadcastMessages;
-
+    private static readonly bool s_typeIsDisposable = typeof(T).IsAssignableTo(typeof(IDisposable)) || typeof(T).IsAssignableTo(typeof(IAsyncDisposable));
+    private static readonly bool s_typeIsICompletableMessage = typeof(T).IsAssignableTo(typeof(ICompletableMessage));
     private readonly Task _broadcastTask;
 
 
@@ -19,9 +20,6 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
             0
         );
 
-    private readonly WeakReference[] _weakReferences = Array.Empty<WeakReference>();
-
-
     private IEnumerable<SubscriptionToken<T>>? _subscriptionCache;
     private IEnumerable<WeakReference>? _weakReferenceCache;
 
@@ -32,6 +30,12 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         _broadcastMessages = Channel.CreateBounded<T>(options.Value.CreateChannelOptions());
         _randomTargetChannel = Channel.CreateBounded<T>(options.Value.CreateChannelOptions());
         _broadcastTask = Task.WhenAll(BroadcastProcessor(), RandomTargetMessageProcessor());
+    }
+
+    public async Task ShutdownAsync()
+    {
+        Dispose();
+        await _broadcastTask;
     }
 
     public void Dispose()
@@ -91,12 +95,11 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                 var tasks = GetSubscriptionTokens()
                     .Select(i => i.TryInvokeListener(loopMessage))
                     .ToArray();
-                if (tasks.Length == 0)
+                if (tasks.Length != 0)
                 {
-                    continue;
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
-
-                await Task.WhenAll(tasks).ConfigureAwait(false);
+                await CompleteMessage(message);
             }
         }
         catch (ChannelClosedException)
@@ -104,17 +107,40 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         }
     }
 
+    private static async ValueTask CompleteMessage(T message)
+    {
+        if (message is null) return;
+        if (!(s_typeIsDisposable || s_typeIsICompletableMessage)) return;
+        if (s_typeIsICompletableMessage)
+        {
+            var completable = (ICompletableMessage)message;
+            await completable.CompleteAsync();
+        }
+        if(s_typeIsDisposable)
+            await DisposeMessage(message);
+    }
+    private static async ValueTask DisposeMessage(T message)
+    {
+        switch (message)
+        {
+            case IAsyncDisposable asyncDisposable:
+                await asyncDisposable.DisposeAsync();
+                break;
+            case IDisposable disposable:
+                disposable.Dispose();
+                break;
+        }
+    }
     private async Task RandomTargetMessageProcessor()
     {
         await Task.Yield();
         try
         {
-            await foreach (var message in _broadcastMessages.Reader.ReadAllAsync().ConfigureAwait(false))
+            await foreach (var message in _randomTargetChannel.Reader.ReadAllAsync().ConfigureAwait(false))
             {
                 var loopMessage = message;
                 // Get random subscription
                 var subscriptions = GetSubscriptionTokens()
-                    .AsParallel()
                     .OrderBy(i => Random.Shared.NextDouble());
                 foreach (var subscription in subscriptions)
                 {
@@ -125,6 +151,8 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                         break;
                     }
                 }
+
+                await CompleteMessage(message);
             }
         }
         catch (ChannelClosedException)
