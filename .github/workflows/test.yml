@@ -8,7 +8,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
-  build_release_configuration:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -20,17 +20,16 @@ jobs:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
-      - run: dotnet restore
-      - run: dotnet build --no-restore -c Release -property:WarningLevel=0
+      - run: dotnet test
   build_status_comment_failed:
     runs-on: ubuntu-latest
     if: failure() && github.event_name == 'pull_request'
     needs:
-      - build_release_configuration
+      - test
     steps:
-      - name: Report build failure
+      - name: Report test failure
         uses: thollander/actions-comment-pull-request@v1
         with:
-          message: 'Your build has failed. Your PR will not be reviewed until this is fixed.'
+          message: 'Tests are failing, Your changes will not be reviewed until tests pass'
           comment_includes: 'your build has started'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
