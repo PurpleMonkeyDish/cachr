@@ -32,6 +32,12 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         _broadcastTask = Task.WhenAll(BroadcastProcessor(), RandomTargetMessageProcessor());
     }
 
+    public async Task ShutdownAsync()
+    {
+        Dispose();
+        await _broadcastTask;
+    }
+
     public void Dispose()
     {
         // Mark the channels complete to shutdown the processors.
