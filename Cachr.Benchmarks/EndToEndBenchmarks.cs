@@ -50,7 +50,7 @@ public class EndToEndBenchmarks
         {
             if (_duplicateTracker.IsDuplicate(arg.Message.Id)) return;
             await _inboundMessageBus.BroadcastAsync(new InboundCacheMessageEnvelope(NodeIdentity.Id, arg.Target,
-                arg.Message));
+                arg.Message)).ConfigureAwait(false);
         }
 
         public void Dispose()
@@ -64,7 +64,7 @@ public class EndToEndBenchmarks
     {
         for (var x = 0; x < 100; x++)
         {
-            await _cache.SetAsync(string.Empty, Array.Empty<byte>());
+            await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
         }
     }
 
@@ -77,7 +77,7 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task CacheSetBenchmarkAsync()
     {
-        await _cache.SetAsync(string.Empty, Array.Empty<byte>());
+        await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
     }
 
     [Benchmark]
@@ -89,7 +89,7 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task<byte[]> CacheGetBenchmarkAsync()
     {
-        return await _cache.GetAsync(string.Empty);
+        return await _cache.GetAsync(string.Empty).ConfigureAwait(false);
     }
 
     [Benchmark]
@@ -102,8 +102,8 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task CacheRefreshBenchmarkAsync()
     {
-        await _cache.SetAsync(string.Empty, Array.Empty<byte>());
-        await _cache.RefreshAsync(string.Empty);
+        await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
+        await _cache.RefreshAsync(string.Empty).ConfigureAwait(false);
     }
 
     [Benchmark]
@@ -117,8 +117,8 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task CacheRemoveAsyncBenchmark()
     {
-        await _cache.SetAsync(string.Empty, Array.Empty<byte>());
-        await _cache.RemoveAsync(string.Empty);
+        await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
+        await _cache.RemoveAsync(string.Empty).ConfigureAwait(false);
     }
 
 

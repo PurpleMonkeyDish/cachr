@@ -32,7 +32,7 @@ public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
     {
         if (envelope.Target != null && envelope.Target != NodeIdentity.Id)
             return;
-        await HandleMessage(envelope.Message, envelope.Sender);
+        await HandleMessage(envelope.Message, envelope.Sender).ConfigureAwait(false);
     }
 
     public void BeginPreload()

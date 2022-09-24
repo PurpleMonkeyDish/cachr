@@ -36,7 +36,7 @@ public sealed class PeerMessagingHandler : IPeerMessagingHandler, IDisposable
         else
             cacheGossipMessage = CacheGossipMessage.Create(NodeIdentity.Id, encodedMessage);
         _duplicateTracker.IsDuplicate(cacheGossipMessage.Id); // We don't want to process this message.
-        await _cacheGossipMessageBus.BroadcastAsync(cacheGossipMessage);
+        await _cacheGossipMessageBus.BroadcastAsync(cacheGossipMessage).ConfigureAwait(false);
     }
 
     public void Dispose()
