@@ -90,13 +90,10 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
             await foreach (var message in _broadcastMessages.Reader.ReadAllAsync().ConfigureAwait(false))
             {
                 var loopMessage = message;
-                var tasks = GetSubscriptionTokens()
-                    .Select(i => i.TryInvokeListener(loopMessage))
-                    .ToArray();
-                if (tasks.Length != 0)
+                await Parallel.ForEachAsync(GetSubscriptionTokens(), async (token, cancellationToken) =>
                 {
-                    await Task.WhenAll(tasks).ConfigureAwait(false);
-                }
+                    await token.TryInvokeListener(loopMessage, true).ConfigureAwait(false);
+                });
 
                 await CompleteMessage(message);
             }
@@ -141,7 +138,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                     .OrderBy(i => Random.Shared.NextDouble());
                 foreach (var subscription in subscriptions)
                 {
-                    var didProcessMessage = await subscription.TryInvokeListener(loopMessage)
+                    var didProcessMessage = await subscription.TryInvokeListener(loopMessage, false)
                         .ConfigureAwait(false);
                     if (didProcessMessage)
                     {

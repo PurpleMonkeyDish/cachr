@@ -40,7 +40,7 @@ public sealed class SubscriptionToken<T> : ISubscriptionToken
         return (message, _) => callback.Invoke(message);
     }
 
-    public async Task<bool> TryInvokeListener(T message)
+    public async Task<bool> TryInvokeListener(T message, bool broadcast = true)
     {
         if (IsDisposed)
         {
