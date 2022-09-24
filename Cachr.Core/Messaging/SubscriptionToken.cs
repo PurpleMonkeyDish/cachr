@@ -1,77 +1,32 @@
 namespace Cachr.Core.Messaging;
 
-public sealed class SubscriptionToken<T> : ISubscriptionToken
+public sealed class SubscriptionToken<T> : SubscriptionBase<T>
+    where T : class
 {
-    private readonly Func<T, object?, Task> _callback;
-    private readonly IMessageBus<T> _messageBus;
-    private readonly object? _state;
-    private volatile int _disposedState;
+    private Func<T, object?, ValueTask> Callback { get; }
 
-    public SubscriptionToken(Func<T, Task> callback, IMessageBus<T> messageBus) :
-        this(CreateCallbackWrapper(callback), messageBus)
+    protected override ValueTask ProcessMessageAsync(SubscriptionMode mode, T message, object? state)
+    {
+        return Callback.Invoke(message, state);
+    }
+
+    public SubscriptionToken(Func<T, ValueTask> callback, IMessageBus<T> messageBus, SubscriptionMode mode) :
+        this(CreateCallbackWrapper(callback), messageBus, null, mode)
     {
     }
 
-    public SubscriptionToken(Func<T, object?, Task> callback, IMessageBus<T> messageBus, object? state = null)
+    public SubscriptionToken(Func<T, object?, ValueTask> callback, IMessageBus<T> messageBus, object? state,
+        SubscriptionMode mode)
+        : base (messageBus, mode, state)
     {
         ArgumentNullException.ThrowIfNull(callback);
-        _callback = callback;
-        _state = state;
-        _messageBus = messageBus;
+        Callback = callback;
     }
 
-    private bool IsDisposed => _disposedState != 0;
 
-    public void Dispose()
-    {
-        DisposeAsync().GetAwaiter().GetResult();
-    }
-
-    public Guid Id { get; } = Guid.NewGuid();
-
-    public void Unsubscribe()
-    {
-        Dispose();
-    }
-
-    private static Func<T, object?, Task> CreateCallbackWrapper(Func<T, Task> callback)
+    private static Func<T, object?, ValueTask> CreateCallbackWrapper(Func<T, ValueTask> callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
         return (message, _) => callback.Invoke(message);
-    }
-
-    public async Task<bool> TryInvokeListener(T message)
-    {
-        if (IsDisposed)
-        {
-            return false;
-        }
-
-        try
-        {
-            await _callback.Invoke(message, _state).ConfigureAwait(false);
-            return true;
-        }
-        catch (Exception)
-        {
-            await UnsubscribeAsync().ConfigureAwait(false);
-            return false;
-        }
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 1)
-        {
-            return new ValueTask();
-        }
-
-        _messageBus.Unsubscribe(this);
-        return new ValueTask();
-    }
-
-    public ValueTask UnsubscribeAsync()
-    {
-        return DisposeAsync();
     }
 }

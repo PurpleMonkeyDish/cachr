@@ -24,7 +24,7 @@ public sealed class DnsPeerDiscoveryProvider : IPeerDiscoveryProvider, IDisposab
     {
         if(string.IsNullOrWhiteSpace(_dnsDiscoveryConfiguration.HostName))
             return Enumerable.Empty<string>();
-        var hostEntries = await Dns.GetHostAddressesAsync(_dnsDiscoveryConfiguration.HostName);
+        var hostEntries = await Dns.GetHostAddressesAsync(_dnsDiscoveryConfiguration.HostName).ConfigureAwait(false);
         if(hostEntries.Length == 0) return Enumerable.Empty<string>();
         return EnumerateHostEntriesToUri(hostEntries);
     }

@@ -1,7 +1,8 @@
 namespace Cachr.Core.Messaging;
 
-public interface ISubscriptionToken : IDisposable
+public interface ISubscriptionToken : IDisposable, IAsyncDisposable
 {
     Guid Id { get; }
-    void Unsubscribe();
+    void Unsubscribe() => Dispose();
+    ValueTask UnsubscribeAsync() => DisposeAsync();
 }

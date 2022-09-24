@@ -4,9 +4,9 @@ using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 using Cachr.Benchmarks;
 
-BenchmarkRunner.Run(typeof(Program).Assembly, // all benchmarks from given assembly are going to be executed
-    ManualConfig
-        .Create(DefaultConfig.Instance)
-        .WithOption(ConfigOptions.JoinSummary, true)
-        .WithOption(ConfigOptions.DisableLogFile, true)
-    , args);
+var configuration = ManualConfig
+    .Create(DefaultConfig.Instance)
+    .WithOption(ConfigOptions.JoinSummary, true)
+    .WithOption(ConfigOptions.DisableLogFile, true);
+
+BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, configuration);

@@ -31,40 +31,34 @@ public class EndToEndBenchmarks
     private CachrMessageReflector _reflector;
     private readonly IDistributedCache _cache;
 
-    public class CachrMessageReflector : IDisposable
+    public class CachrMessageReflector : SubscriptionBase<OutboundCacheMessageEnvelope>
     {
         private readonly IMessageBus<InboundCacheMessageEnvelope> _inboundMessageBus;
         private readonly IDuplicateTracker<Guid> _duplicateTracker;
-        private readonly ISubscriptionToken _subscriptionToken;
         public CachrMessageReflector(
             IMessageBus<OutboundCacheMessageEnvelope> outboundMessageBus,
             IMessageBus<InboundCacheMessageEnvelope> inboundMessageBus
-        )
+        ) : base(outboundMessageBus, SubscriptionMode.All, null)
         {
             _inboundMessageBus = inboundMessageBus;
             _duplicateTracker = new DuplicateTracker<Guid>();
-            _subscriptionToken = outboundMessageBus.Subscribe(OnOutboundMessage);
+            outboundMessageBus.Subscribe(this);
         }
 
-        private async Task OnOutboundMessage(OutboundCacheMessageEnvelope arg)
+        protected override async ValueTask ProcessMessageAsync(SubscriptionMode mode, OutboundCacheMessageEnvelope message, object? state)
         {
-            if (_duplicateTracker.IsDuplicate(arg.Message.Id)) return;
-            await _inboundMessageBus.BroadcastAsync(new InboundCacheMessageEnvelope(NodeIdentity.Id, arg.Target,
-                arg.Message));
-        }
-
-        public void Dispose()
-        {
-            _subscriptionToken.Dispose();
+            if (_duplicateTracker.IsDuplicate(message.Message.Id)) return;
+            await _inboundMessageBus.BroadcastAsync(new InboundCacheMessageEnvelope(NodeIdentity.Id, message.Target,
+                message.Message)).ConfigureAwait(false);
         }
     }
 
-    [Benchmark]
+    [Benchmark(OperationsPerInvoke = 100)]
     public async Task EndToEndCachePerformanceAsync()
     {
         for (var x = 0; x < 100; x++)
         {
-            await _cache.SetAsync(string.Empty, Array.Empty<byte>());
+            await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
         }
     }
 
@@ -77,7 +71,7 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task CacheSetBenchmarkAsync()
     {
-        await _cache.SetAsync(string.Empty, Array.Empty<byte>());
+        await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
     }
 
     [Benchmark]
@@ -89,7 +83,7 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task<byte[]> CacheGetBenchmarkAsync()
     {
-        return await _cache.GetAsync(string.Empty);
+        return await _cache.GetAsync(string.Empty).ConfigureAwait(false);
     }
 
     [Benchmark]
@@ -102,8 +96,8 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task CacheRefreshBenchmarkAsync()
     {
-        await _cache.SetAsync(string.Empty, Array.Empty<byte>());
-        await _cache.RefreshAsync(string.Empty);
+        await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
+        await _cache.RefreshAsync(string.Empty).ConfigureAwait(false);
     }
 
     [Benchmark]
@@ -117,8 +111,8 @@ public class EndToEndBenchmarks
     [Benchmark]
     public async Task CacheRemoveAsyncBenchmark()
     {
-        await _cache.SetAsync(string.Empty, Array.Empty<byte>());
-        await _cache.RemoveAsync(string.Empty);
+        await _cache.SetAsync(string.Empty, Array.Empty<byte>()).ConfigureAwait(false);
+        await _cache.RemoveAsync(string.Empty).ConfigureAwait(false);
     }
 
 

@@ -11,13 +11,13 @@ There are many example tests, and all new code is expected to have a suite of te
 Please send a GitHub pull request to jasoncouture/cachr with a clear list of what has changed, and why the changes are needed.
 If your changes are large, please start a discussion before requesting a review. It will save us time, as we're going to ask you to do that anyway!
 
-
 ### Commits are expected to be atomic
 * Commits build independently.
   * You can test this with `git fetch; git rebase origin/main --exec dotnet build`.
 * Commits pass tests
   * You can test this with `git fetch; git rebase origin/main --exec dotnet test`.
 * Commits contain exactly one feature, concern, or refactoring
+
 ### Commits and pull requests are expected to be understandable
 * Each pull request should focus on one group of related things at a time.
 * Please keep commits small where possible
@@ -28,5 +28,11 @@ $ git commit -m "A brief summary of the commit
 > A paragraph describing what changed and its impact."
 ```
 
+### Performance
+* We will not prematurely optimize
+* That being said, performance is a concern. As this is targeted at hyper-scale deployments.
+  * Performance regressions past 200% will be blocked.
+  * Performance regressions past 120% will be questioned.
+  * Please always keep this in mind: Safe first, Fast second.
 
 And hey, you made it to the end! Thanks again for taking the time to read this!

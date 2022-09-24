@@ -1,0 +1,51 @@
+name: "Benchmarks"
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request: { }
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '6.0.x'
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
+      - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*' -i
+      - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report.json
+      - name: Store Benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          tool: 'benchmarkdotnet'
+          output-file-path: ./report.json  # BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
+          alert-threshold: '200%'
+          comment-on-alert: true
+          comment-always: false
+          fail-on-alert: false
+          auto-push: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: ""
+      - name: Report benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        if: github.ref != 'refs/heads/master'
+        with:
+          tool: 'benchmarkdotnet'
+          output-file-path: ./report.json  # BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
+          alert-threshold: '200%'
+          comment-on-alert: true
+          comment-always: true
+          fail-on-alert: true
+          auto-push: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: ""

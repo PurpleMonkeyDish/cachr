@@ -1,0 +1,33 @@
+name: "Unit Test Report"
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request: { }
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
+  cancel-in-progress: true
+jobs:
+  build_test_report:
+    name: "Build Test Report"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '6.0.x'
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      - uses: zyborg/dotnet-tests-report@v1
+        with:
+          report_name: unit_tests
+          report_title: Unit Test Results
+          set_check_status_from_test_outcome: true
+          extra_test_parameters: '-property:WarningLevel=0'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gist_name: dotnet-tests-report_xunit.md
+          gist_badge_label: 'Tests: %Counters_passed%/%Counters_total%'
+          gist_token: ${{ secrets.GIST_TOKEN }}
