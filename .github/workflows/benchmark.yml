@@ -23,7 +23,7 @@ jobs:
       - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
       - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*' -i
       - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report.json
-      - name: Store Benchmark result
+      - name: 'Report Result'
         uses: rhysd/github-action-benchmark@v1
         if: github.ref == 'refs/heads/master'
         with:
@@ -36,7 +36,7 @@ jobs:
           auto-push: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: ""
-      - name: Report benchmark result
+      - name: 'Store Result'
         uses: rhysd/github-action-benchmark@v1
         if: github.ref != 'refs/heads/master'
         with:
