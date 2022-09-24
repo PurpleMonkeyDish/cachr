@@ -17,8 +17,6 @@ public static class ServiceCollectionExtensions
     {
         // Try add is used for services we expect to be replaced, before or after we're called.
         services.TryAddSingleton<IPeerDiscoveryProvider, DefaultPeerDiscoveryProvider>();
-        services.TryAddSingleton<IGossipTransportProvider, NoOpGossipTransportProvider>();
-        services.AddSingleton<IHostedService, GossipTransportManagerService>();
         services.AddSingleton<ICacheStorage, ShardedMemoryCacheStorage>();
         services.AddSingleton<ICachrDistributedCache, CachrDistributedCache>();
         services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
