@@ -21,7 +21,7 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
-      - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*'
+      - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*' -i
       - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report.json
       - name: Store Benchmark result
         uses: rhysd/github-action-benchmark@v1
