@@ -7,7 +7,7 @@ namespace Cachr.Core.Buffers;
 public sealed class RentedArray<T> : IDisposable
 {
     private readonly ReadOnlyMemory<T> _data;
-    private ArrayPool<T>? _pool;
+    private readonly ArrayPool<T>? _pool;
     private readonly ArraySegment<T> _segment;
     private T[]? _dataArray;
     private readonly bool _disposable;
