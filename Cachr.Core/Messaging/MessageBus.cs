@@ -109,7 +109,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         await Task.Yield();
         try
         {
-            await foreach (var message in _broadcastMessages.Reader.ReadAllAsync().ConfigureAwait(false))
+            await foreach (var message in _randomTargetChannel.Reader.ReadAllAsync().ConfigureAwait(false))
             {
                 var loopMessage = message;
                 // Get random subscription
