@@ -14,8 +14,8 @@ public class MessageBusTests
     {
         var mockDisposable = new Mock<IDisposable>();
         var bus = new MessageBus<IDisposable>(new MessageBusOptions());
-        await bus.BroadcastAsync(mockDisposable.Object, CancellationToken.None);
-        await bus.ShutdownAsync();
+        await bus.BroadcastAsync(mockDisposable.Object, CancellationToken.None).ConfigureAwait(false);
+        await bus.ShutdownAsync().ConfigureAwait(false);
 
         mockDisposable.Verify(i => i.Dispose(), Times.Once);
         mockDisposable.Reset();
@@ -26,8 +26,8 @@ public class MessageBusTests
     {
         var mockDisposable = new Mock<IDisposable>();
         var bus = new MessageBus<IDisposable>(new MessageBusOptions());
-        await bus.SendToRandomAsync(mockDisposable.Object, CancellationToken.None);
-        await bus.ShutdownAsync();
+        await bus.SendToRandomAsync(mockDisposable.Object, CancellationToken.None).ConfigureAwait(false);
+        await bus.ShutdownAsync().ConfigureAwait(false);
         mockDisposable.Verify(i => i.Dispose(), Times.Once);
     }
 
@@ -37,8 +37,8 @@ public class MessageBusTests
         var mockDisposable = new Mock<ICompletableMessage>();
         mockDisposable.Setup(i => i.CompleteAsync()).Returns(ValueTask.CompletedTask);
         var bus = new MessageBus<ICompletableMessage>(new MessageBusOptions());
-        await bus.BroadcastAsync(mockDisposable.Object, CancellationToken.None);
-        await bus.ShutdownAsync();
+        await bus.BroadcastAsync(mockDisposable.Object, CancellationToken.None).ConfigureAwait(false);
+        await bus.ShutdownAsync().ConfigureAwait(false);
 
         mockDisposable.Verify(i => i.CompleteAsync(), Times.Once);
         mockDisposable.Reset();
@@ -50,8 +50,8 @@ public class MessageBusTests
         var mockDisposable = new Mock<ICompletableMessage>();
         mockDisposable.Setup(i => i.CompleteAsync()).Returns(ValueTask.CompletedTask);
         var bus = new MessageBus<ICompletableMessage>(new MessageBusOptions());
-        await bus.SendToRandomAsync(mockDisposable.Object, CancellationToken.None);
-        await bus.ShutdownAsync();
+        await bus.SendToRandomAsync(mockDisposable.Object, CancellationToken.None).ConfigureAwait(false);
+        await bus.ShutdownAsync().ConfigureAwait(false);
 
         mockDisposable.Verify(i => i.CompleteAsync(), Times.Once);
         mockDisposable.Reset();

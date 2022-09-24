@@ -33,7 +33,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
     public async Task ShutdownAsync()
     {
         Dispose();
-        await _broadcastTask;
+        await _broadcastTask.ConfigureAwait(false);
     }
 
     public void Dispose()
@@ -60,14 +60,14 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         ).ConfigureAwait(false);
     }
 
-    public ISubscriptionToken Subscribe(Func<T, ValueTask> callback, bool broadcast = true, bool targeted = true)
+    public ISubscriptionToken Subscribe(Func<T, ValueTask> callback, SubscriptionMode mode = SubscriptionMode.All)
     {
-        return AddSubscription(new SubscriptionToken<T>(callback, this));
+        return AddSubscription(new SubscriptionToken<T>(callback, this, mode: mode));
     }
 
-    public ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null, bool broadcast = true, bool targeted = true)
+    public ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null, SubscriptionMode mode = SubscriptionMode.All)
     {
-        return AddSubscription(new SubscriptionToken<T>(callback, this, state));
+        return AddSubscription(new SubscriptionToken<T>(callback, this, state, mode: mode));
     }
 
     public void Unsubscribe(ISubscriptionToken subscriptionToken)
@@ -84,18 +84,15 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
     private async Task BroadcastProcessor()
     {
+        static ValueTask<bool> Callback(SubscriptionToken<T> token, T message) => token.TryInvokeListener(message, SubscriptionMode.Broadcast);
+        var broadcastCallback = Callback;
         await Task.Yield();
         try
         {
             await foreach (var message in _broadcastMessages.Reader.ReadAllAsync().ConfigureAwait(false))
             {
-                var loopMessage = message;
-                await Parallel.ForEachAsync(GetSubscriptionTokens(), async (token, cancellationToken) =>
-                {
-                    await token.TryInvokeListener(loopMessage, true).ConfigureAwait(false);
-                });
-
-                await CompleteMessage(message);
+                await ForEachSubscriberAsync(broadcastCallback, message);
+                await CompleteMessage(message).ConfigureAwait(false);
             }
         }
         catch (ChannelClosedException)
@@ -103,13 +100,27 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         }
     }
 
+    private async Task ForEachSubscriberAsync(Func<SubscriptionToken<T>, T, ValueTask<bool>> callback, T state)
+    {
+        var subscriptionTasks = GetSubscriptionTokens()
+            // AsParallel is used to avoid synchronous tasks from clogging things up.
+            // It's ok for .ToArray() to take forever, but it's not ok for a callback to wait on another.
+            .AsParallel()
+            .Select(i => callback(i, state))
+            .ToArray();
+        foreach (var task in subscriptionTasks)
+        {
+            await task;
+        }
+    }
+
     private static async ValueTask CompleteMessage(T message)
     {
         if (message is null) return;
 
-        var completable = (ICompletableMessage)message;
-        await completable.CompleteAsync();
-        await DisposeMessage(message);
+        if(message is ICompletableMessage completable)
+            await completable.CompleteAsync().ConfigureAwait(false);
+        await DisposeMessage(message).ConfigureAwait(false);
     }
 
     private static async ValueTask DisposeMessage(T message)
@@ -117,7 +128,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         switch (message)
         {
             case IAsyncDisposable asyncDisposable:
-                await asyncDisposable.DisposeAsync();
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                 break;
             case IDisposable disposable:
                 disposable.Dispose();
@@ -138,7 +149,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                     .OrderBy(i => Random.Shared.NextDouble());
                 foreach (var subscription in subscriptions)
                 {
-                    var didProcessMessage = await subscription.TryInvokeListener(loopMessage, false)
+                    var didProcessMessage = await subscription.TryInvokeListener(loopMessage, SubscriptionMode.Targeted)
                         .ConfigureAwait(false);
                     if (didProcessMessage)
                     {
@@ -146,7 +157,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                     }
                 }
 
-                await CompleteMessage(message);
+                await CompleteMessage(message).ConfigureAwait(false);
             }
         }
         catch (ChannelClosedException)

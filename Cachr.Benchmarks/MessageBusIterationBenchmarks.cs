@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Attributes;
 using Cachr.Core.Messaging;
@@ -8,13 +9,18 @@ namespace Cachr.Benchmarks;
 [JsonExporterAttribute.FullCompressed]
 [MemoryDiagnoser]
 [ThreadingDiagnoser]
-public class MessageBusBenchmarks
+[SuppressMessage("ReSharper", "ClassCanBeSealed.Global", Justification = "Required by BenchmarkDotNet")]
+public class MessageBusIterationBenchmarks
 {
     private sealed record AwaitableCompletableMessage(long StartTimestamp) : ICompletableMessage
     {
         public AwaitableCompletableMessage() : this(DateTimeOffset.Now.ToUnixTimeMilliseconds()) { }
 
         private readonly TaskCompletionSource<long> _taskCompletionSource = new();
+
+        public ConfiguredTaskAwaitable<long> ConfigureAwait(bool continueOnCapturedContext) =>
+            _taskCompletionSource.Task.ConfigureAwait(continueOnCapturedContext);
+
         public TaskAwaiter<long> GetAwaiter() => _taskCompletionSource.Task.GetAwaiter();
 
         public ValueTask CompleteAsync()
@@ -28,42 +34,42 @@ public class MessageBusBenchmarks
         public AwaitableCompletableMessage Reset() => new AwaitableCompletableMessage();
     }
 
-    private MessageBus<object> _messageBus;
+    private MessageBus<object>? _messageBus;
     private AwaitableCompletableMessage[] _messages = Array.Empty<AwaitableCompletableMessage>();
     private ISubscriptionToken[] _subscriptionTokens = Array.Empty<ISubscriptionToken>();
-    [Params(1, 20, 100)] public int MessageCount { get; set; }
-    [Params(100, 1000, 10000)] public int SubscriberCount { get; set; }
+    private const int MessageCount = 100;
+    private const int SubscriberCount = 10000;
 
     [Benchmark]
     public async Task BroadcastAsyncBenchmark()
     {
         await Task.WhenAll(
             Enumerable.Range(0, MessageCount)
-                .Select(i => _messageBus.BroadcastAsync(_messages[i], CancellationToken.None)
+                .Select(i => _messageBus!.BroadcastAsync(_messages[i], CancellationToken.None)
                     .ContinueWith(
                         async t =>
                         {
-                            await t;
+                            await t.ConfigureAwait(false);
                             await _messages[i];
                             _messages[i] = _messages[i].Reset();
                         }
                     ).Unwrap()
                 )
-        );
+        ).ConfigureAwait(false);
     }
 
 
     [Benchmark]
     public async Task SendToAsyncBenchmark()
     {
-        await Task.WhenAll(Enumerable.Range(0, MessageCount).Select(i => _messageBus
+        await Task.WhenAll(Enumerable.Range(0, MessageCount).Select(i => _messageBus!
             .SendToRandomAsync(_messages[i], CancellationToken.None).ContinueWith(
                 async t =>
                 {
-                    await t;
-                    await _messages[i];
+                    await t.ConfigureAwait(false);
+                    await _messages[i].ConfigureAwait(false);
                     _messages[i] = _messages[i].Reset();
-                })));
+                }))).ConfigureAwait(false);
 
         Parallel.For(0, MessageCount, x =>
         {
@@ -76,8 +82,14 @@ public class MessageBusBenchmarks
     {
         _messageBus = new MessageBus<object>(new MessageBusOptions());
         _messages = Enumerable.Range(0, MessageCount).Select(i => new AwaitableCompletableMessage()).ToArray();
-        _subscriptionTokens = Enumerable.Range(0, SubscriberCount)
-            .Select(x => _messageBus.Subscribe(o => ValueTask.CompletedTask))
+        _subscriptionTokens = Enumerable.Range(0, SubscriberCount / 4)
+            .SelectMany(x => new[]
+            {
+                _messageBus.Subscribe(o => ValueTask.CompletedTask, (SubscriptionMode)0),
+                _messageBus.Subscribe(o => ValueTask.CompletedTask, SubscriptionMode.Broadcast),
+                _messageBus.Subscribe(o => ValueTask.CompletedTask, SubscriptionMode.Targeted),
+                _messageBus.Subscribe(o => ValueTask.CompletedTask, SubscriptionMode.All),
+            })
             .ToArray();
     }
 
@@ -90,6 +102,6 @@ public class MessageBusBenchmarks
         }
 
         _subscriptionTokens = Array.Empty<ISubscriptionToken>();
-        ((MessageBus<object>)_messageBus).ShutdownAsync().GetAwaiter().GetResult();
+        _messageBus!.ShutdownAsync().GetAwaiter().GetResult();
     }
 }

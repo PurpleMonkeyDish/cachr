@@ -1,23 +1,27 @@
 namespace Cachr.Core.Messaging;
 
-public sealed class SubscriptionToken<T> : ISubscriptionToken
+public sealed class SubscriptionToken<T> : ISubscriptionToken, IDisposable, IAsyncDisposable
 {
-    private readonly Func<T, object?, ValueTask> _callback;
+    private Func<T, object?, ValueTask>? Callback { get; }
     private readonly IMessageBus<T> _messageBus;
     private readonly object? _state;
     private volatile int _disposedState;
 
-    public SubscriptionToken(Func<T, ValueTask> callback, IMessageBus<T> messageBus) :
-        this(CreateCallbackWrapper(callback), messageBus)
+    public SubscriptionMode Mode { get; }
+
+    public SubscriptionToken(Func<T, ValueTask> callback, IMessageBus<T> messageBus, SubscriptionMode mode) :
+        this(CreateCallbackWrapper(callback), messageBus, null, mode)
     {
     }
 
-    public SubscriptionToken(Func<T, object?, ValueTask> callback, IMessageBus<T> messageBus, object? state = null)
+    public SubscriptionToken(Func<T, object?, ValueTask> callback, IMessageBus<T> messageBus, object? state,
+        SubscriptionMode mode)
     {
         ArgumentNullException.ThrowIfNull(callback);
-        _callback = callback;
+        Callback = callback;
         _state = state;
         _messageBus = messageBus;
+        Mode = mode;
     }
 
     private bool IsDisposed => _disposedState != 0;
@@ -29,49 +33,59 @@ public sealed class SubscriptionToken<T> : ISubscriptionToken
 
     public Guid Id { get; } = Guid.NewGuid();
 
-    public void Unsubscribe()
-    {
-        Dispose();
-    }
-
     private static Func<T, object?, ValueTask> CreateCallbackWrapper(Func<T, ValueTask> callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
-        return async (message, _) => await callback.Invoke(message);
+        return (message, _) => callback.Invoke(message);
     }
 
-    public async ValueTask<bool> TryInvokeListener(T message, bool broadcast = true)
+    public async ValueTask<bool> TryInvokeListener(T message, SubscriptionMode mode)
     {
+        switch (mode)
+        {
+            case SubscriptionMode.Broadcast when IsDisposed || !Mode.HasFlag(SubscriptionMode.Broadcast):
+            case SubscriptionMode.Targeted when IsDisposed || !Mode.HasFlag(SubscriptionMode.Targeted):
+            case SubscriptionMode.All when IsDisposed:
+                return false;
+            case SubscriptionMode.All when !Mode.HasFlag(SubscriptionMode.Broadcast) && !Mode.HasFlag(SubscriptionMode.Targeted):
+                return false;
+        }
+
         if (IsDisposed)
         {
             return false;
         }
 
+        var callback = Callback;
+
+        if (callback is null)
+        {
+            await ((ISubscriptionToken)this).UnsubscribeAsync().ConfigureAwait(false);
+            return false;
+        }
+
         try
         {
-            await _callback.Invoke(message, _state).ConfigureAwait(false);
+            await callback.Invoke(message, _state).ConfigureAwait(false);
             return true;
         }
         catch (Exception)
         {
-            await UnsubscribeAsync().ConfigureAwait(false);
+            await ((ISubscriptionToken)this).UnsubscribeAsync().ConfigureAwait(false);
             return false;
         }
     }
 
-    public ValueTask DisposeAsync()
+#pragma warning disable CS1998
+    public async ValueTask DisposeAsync()
+
     {
         if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 1)
         {
-            return new ValueTask();
+            return;
         }
 
         _messageBus.Unsubscribe(this);
-        return new ValueTask();
     }
-
-    public ValueTask UnsubscribeAsync()
-    {
-        return DisposeAsync();
-    }
+#pragma warning restore CS1998
 }

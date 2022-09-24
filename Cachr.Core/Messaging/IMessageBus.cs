@@ -4,7 +4,7 @@ public interface IMessageBus<T>
 {
     Task BroadcastAsync(T message, CancellationToken cancellationToken = default);
     Task SendToRandomAsync(T message, CancellationToken cancellationToken = default);
-    ISubscriptionToken Subscribe(Func<T, ValueTask> callback, bool broadcast = true, bool targeted = true);
-    ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null, bool broadcast = true, bool targeted = true);
+    ISubscriptionToken Subscribe(Func<T, ValueTask> callback, SubscriptionMode mode = SubscriptionMode.All);
+    ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null, SubscriptionMode mode = SubscriptionMode.All);
     void Unsubscribe(ISubscriptionToken subscriptionToken);
 }
