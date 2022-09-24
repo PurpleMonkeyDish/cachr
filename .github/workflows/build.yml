@@ -38,5 +38,5 @@ jobs:
         uses: thollander/actions-comment-pull-request@v1
         if: success() && github.event_name == 'pull_request'
         with:
-          message: 'Your build has failed. Your PR will not be reviewed until this is fixed.'
+          message: ':heavy_check_mark: - Build has passed'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
