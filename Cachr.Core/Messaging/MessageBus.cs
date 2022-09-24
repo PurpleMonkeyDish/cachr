@@ -1,10 +1,21 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Microsoft.Extensions.Options;
 
 namespace Cachr.Core.Messaging;
 
+public interface ISubscriber<in T> : ISubscriptionToken
+    where T : class
+{
+    SubscriptionMode Mode { get; }
+    bool HandlesMode(SubscriptionMode mode) => Mode == SubscriptionMode.All || Mode.HasFlag(mode);
+    bool WillTryToHandleMessage(SubscriptionMode mode, T message);
+    ValueTask<bool> TryProcessMessageAsync(SubscriptionMode mode, T message);
+}
+
 public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
+    where T : class
 {
     private readonly Channel<T> _broadcastMessages;
     private readonly Task _broadcastTask;
@@ -14,12 +25,14 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
     private readonly ConcurrentDictionary<Guid, WeakReference> _subscriptions =
         new(
-            Environment.ProcessorCount * 16,
+            8,
             0
         );
 
-    private IEnumerable<SubscriptionToken<T>>? _subscriptionCache;
-    private IEnumerable<WeakReference>? _weakReferenceCache;
+    private IEnumerable<ISubscriber<T>>? _subscriptionCache;
+    private WeakReference[]? _weakReferenceCache;
+    private IEnumerable<ISubscriber<T>>? _broadcastSubscriptionCache;
+    private IEnumerable<ISubscriber<T>>? _targetedSubscriptionCache;
 
     public MessageBus(IOptions<MessageBusOptions> options)
     {
@@ -65,7 +78,8 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         return AddSubscription(new SubscriptionToken<T>(callback, this, mode: mode));
     }
 
-    public ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null, SubscriptionMode mode = SubscriptionMode.All)
+    public ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null,
+        SubscriptionMode mode = SubscriptionMode.All)
     {
         return AddSubscription(new SubscriptionToken<T>(callback, this, state, mode: mode));
     }
@@ -84,80 +98,122 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
     private async Task BroadcastProcessor()
     {
-        static ValueTask<bool> Callback(SubscriptionToken<T> token, T message) => token.TryInvokeListener(message, SubscriptionMode.Broadcast);
+        static async ValueTask<bool> Callback(ISubscriber<T> token, T message)
+        {
+            if (!token.WillTryToHandleMessage(SubscriptionMode.Broadcast, message)) return false;
+            return await token.TryProcessMessageAsync(SubscriptionMode.Broadcast, message);
+        }
+
         var broadcastCallback = Callback;
         await Task.Yield();
         try
         {
+            var tasks = new List<Task>();
             await foreach (var message in _broadcastMessages.Reader.ReadAllAsync().ConfigureAwait(false))
             {
-                await ForEachSubscriberAsync(broadcastCallback, message);
-                await CompleteMessage(message).ConfigureAwait(false);
+                tasks.Add(
+                    ForEachSubscriberAsync(
+                        GetSubscriptionTokens(SubscriptionMode.Broadcast),
+                        broadcastCallback,
+                        message
+                    )
+                );
+                while (tasks.Any(i => i.IsCompleted) || tasks.Count >= 4)
+                {
+                    var complete = await Task.WhenAny(tasks).ConfigureAwait(false);
+                    await complete;
+                    tasks.Remove(complete);
+                }
             }
+
+            await Task.WhenAll(tasks);
         }
         catch (ChannelClosedException)
         {
         }
     }
 
-    private async Task ForEachSubscriberAsync(Func<SubscriptionToken<T>, T, ValueTask<bool>> callback, T state)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static async Task ForEachSubscriberAsync(IEnumerable<ISubscriber<T>> subscriptionTokens,
+        Func<ISubscriber<T>, T, ValueTask<bool>> callback, T state, bool completeMessage = true)
     {
-        var subscriptionTasks = GetSubscriptionTokens()
+        var subscriptionTasks = subscriptionTokens
             // AsParallel is used to avoid synchronous tasks from clogging things up.
             // It's ok for .ToArray() to take forever, but it's not ok for a callback to wait on another.
             .AsParallel()
+            .WithExecutionMode(ParallelExecutionMode.ForceParallelism)
+            .WithMergeOptions(ParallelMergeOptions.NotBuffered)
             .Select(i => callback(i, state))
             .ToArray();
-        foreach (var task in subscriptionTasks)
+
+        foreach (var valueTask in subscriptionTasks)
         {
-            await task;
+            await valueTask;
+        }
+
+        if (completeMessage)
+        {
+            CompleteMessage(state);
         }
     }
 
-    private static async ValueTask CompleteMessage(T message)
-    {
-        if (message is null) return;
-
-        if(message is ICompletableMessage completable)
-            await completable.CompleteAsync().ConfigureAwait(false);
-        await DisposeMessage(message).ConfigureAwait(false);
-    }
-
-    private static async ValueTask DisposeMessage(T message)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void CompleteMessage(T? message)
     {
         switch (message)
         {
-            case IAsyncDisposable asyncDisposable:
-                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            case null:
+                return;
+            case ICompletableMessage completable:
+                completable.Complete();
                 break;
+        }
+
+        DisposeMessage(message);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void DisposeMessage(T message)
+    {
+        switch (message)
+        {
             case IDisposable disposable:
                 disposable.Dispose();
                 break;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private async Task RandomTargetMessageProcessor()
     {
         await Task.Yield();
+
+        static async Task ProcessSingleMessageAsync(T message, IEnumerable<ISubscriber<T>> subscriptions)
+        {
+            // Get random subscription
+            foreach (var subscription in subscriptions)
+            {
+                if (!subscription.WillTryToHandleMessage(SubscriptionMode.Targeted, message)) continue;
+                var didProcessMessage = await subscription.TryProcessMessageAsync(SubscriptionMode.Targeted, message)
+                    .ConfigureAwait(false);
+                if (didProcessMessage)
+                {
+                    break;
+                }
+            }
+
+            CompleteMessage(message);
+        }
+
         try
         {
+            var tasks = new List<Task>();
             await foreach (var message in _randomTargetChannel.Reader.ReadAllAsync().ConfigureAwait(false))
             {
-                var loopMessage = message;
-                // Get random subscription
-                var subscriptions = GetSubscriptionTokens()
+                var subscriptions = GetSubscriptionTokens(SubscriptionMode.Targeted)
                     .OrderBy(i => Random.Shared.NextDouble());
-                foreach (var subscription in subscriptions)
-                {
-                    var didProcessMessage = await subscription.TryInvokeListener(loopMessage, SubscriptionMode.Targeted)
-                        .ConfigureAwait(false);
-                    if (didProcessMessage)
-                    {
-                        break;
-                    }
-                }
 
-                await CompleteMessage(message).ConfigureAwait(false);
+                tasks.Add(ProcessSingleMessageAsync(message, subscriptions));
             }
         }
         catch (ChannelClosedException)
@@ -165,7 +221,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         }
     }
 
-    private ISubscriptionToken AddSubscription(SubscriptionToken<T> subscription)
+    private ISubscriptionToken AddSubscription(ISubscriber<T> subscription)
     {
         _subscriptions.TryAdd(subscription.Id, new WeakReference(subscription));
         InvalidateSubscriptionCaches();
@@ -176,28 +232,46 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
     {
         Interlocked.Exchange(ref _weakReferenceCache, null);
         Interlocked.Exchange(ref _subscriptionCache, null);
+        Interlocked.Exchange(ref _broadcastSubscriptionCache, null);
+        Interlocked.Exchange(ref _targetedSubscriptionCache, null);
     }
 
-    public IEnumerable<SubscriptionToken<T>> GetSubscriptionTokens()
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private IEnumerable<ISubscriber<T>> GetCachedAliveSubscriptions(SubscriptionMode mode) =>
+        EnumerateSubscriptions(_weakReferenceCache ??= _subscriptions.Values.ToArray(), mode);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private IEnumerable<ISubscriber<T>> GetSubscriptionTokens(SubscriptionMode mode)
     {
-        return _subscriptionCache ??=
-            EnumerateSubscriptions(_weakReferenceCache ??= _subscriptions.Values.ToArray());
+        // Not a valid mode.
+        if ((mode ^ SubscriptionMode.All) == 0) return Enumerable.Empty<ISubscriber<T>>();
+        return mode switch
+        {
+            SubscriptionMode.All => GetFromOrRebuildCache(ref _subscriptionCache, mode),
+            SubscriptionMode.Broadcast => GetFromOrRebuildCache(ref _broadcastSubscriptionCache, mode),
+            SubscriptionMode.Targeted => GetFromOrRebuildCache(ref _targetedSubscriptionCache, mode),
+            _ => Enumerable.Empty<ISubscriber<T>>()
+        };
     }
 
-    private IEnumerable<SubscriptionToken<T>> EnumerateSubscriptions(IEnumerable<WeakReference> weakReferences)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private IEnumerable<ISubscriber<T>> GetFromOrRebuildCache(ref IEnumerable<ISubscriber<T>>? cache, SubscriptionMode mode) =>
+        cache ??= GetCachedAliveSubscriptions(mode);
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private IEnumerable<ISubscriber<T>> EnumerateSubscriptions(WeakReference[] weakReferences,
+        SubscriptionMode mode = SubscriptionMode.All)
     {
         // This is performance critical code, we shouldn't use linq here.
-        foreach (var weakReference in weakReferences)
+        for (var x = 0; x < weakReferences.Length; x++)
         {
-            if (!weakReference.IsAlive)
+            var weakReference = weakReferences[x];
+            if (!weakReference.IsAlive || weakReference.Target is not ISubscriber<T> token)
             {
                 continue;
             }
 
-            if (weakReference.Target is not SubscriptionToken<T> token)
-            {
-                continue;
-            }
+            if (!token.HandlesMode(mode)) continue;
 
             yield return token;
         }

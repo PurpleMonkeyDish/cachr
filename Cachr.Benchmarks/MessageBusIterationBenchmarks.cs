@@ -23,12 +23,11 @@ public class MessageBusIterationBenchmarks
 
         public TaskAwaiter<long> GetAwaiter() => _taskCompletionSource.Task.GetAwaiter();
 
-        public ValueTask CompleteAsync()
+        public void Complete()
         {
-            if (_taskCompletionSource.Task.IsCompleted) return ValueTask.CompletedTask;
+            if (_taskCompletionSource.Task.IsCompleted) return;
             var timeTakenMilliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() - StartTimestamp;
             _taskCompletionSource.TrySetResult(timeTakenMilliseconds);
-            return ValueTask.CompletedTask;
         }
 
         public AwaitableCompletableMessage Reset() => new AwaitableCompletableMessage();

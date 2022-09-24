@@ -35,12 +35,11 @@ public class MessageBusTests
     public async Task MessageBusBroadcastCompletesMessagesWithICompletableMessage()
     {
         var mockDisposable = new Mock<ICompletableMessage>();
-        mockDisposable.Setup(i => i.CompleteAsync()).Returns(ValueTask.CompletedTask);
         var bus = new MessageBus<ICompletableMessage>(new MessageBusOptions());
         await bus.BroadcastAsync(mockDisposable.Object, CancellationToken.None).ConfigureAwait(false);
         await bus.ShutdownAsync().ConfigureAwait(false);
 
-        mockDisposable.Verify(i => i.CompleteAsync(), Times.Once);
+        mockDisposable.Verify(i => i.Complete(), Times.Once);
         mockDisposable.Reset();
     }
 
@@ -48,12 +47,11 @@ public class MessageBusTests
     public async Task MessageBusSendToRandomCompletesMessagesWithICompletableMessage()
     {
         var mockDisposable = new Mock<ICompletableMessage>();
-        mockDisposable.Setup(i => i.CompleteAsync()).Returns(ValueTask.CompletedTask);
         var bus = new MessageBus<ICompletableMessage>(new MessageBusOptions());
         await bus.SendToRandomAsync(mockDisposable.Object, CancellationToken.None).ConfigureAwait(false);
         await bus.ShutdownAsync().ConfigureAwait(false);
 
-        mockDisposable.Verify(i => i.CompleteAsync(), Times.Once);
+        mockDisposable.Verify(i => i.Complete(), Times.Once);
         mockDisposable.Reset();
     }
 }
