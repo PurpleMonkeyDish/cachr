@@ -28,5 +28,11 @@ $ git commit -m "A brief summary of the commit
 > A paragraph describing what changed and its impact."
 ```
 
+### Performance
+* We will not prematurely optimize
+* That being said, performance is a concern. As this is targeted at hyper-scale deployments.
+  * Performance regressions past 200% will be blocked.
+  * Performance regressions past 120% will be questioned.
+  * Please always keep this in mind: Safe first, Fast second.
 
 And hey, you made it to the end! Thanks again for taking the time to read this!
