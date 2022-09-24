@@ -57,7 +57,7 @@ public abstract class SubscriptionBase<T> : ISubscriber<T>
 
     protected virtual bool CanHandleMessage(SubscriptionMode mode, T message) => true;
 
-    public async ValueTask<bool> TryProcessMessageAsync(SubscriptionMode mode, T message)
+    public async ValueTask<bool> OnMessageAsync(SubscriptionMode mode, T message)
     {
         if (IsDisposed) return false;
         try

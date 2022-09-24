@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Cachr.Core.Messages;
 using Cachr.Core.Messages.Encoder;
 using Cachr.Core.Messaging;
@@ -7,13 +8,12 @@ using Microsoft.Extensions.Options;
 
 namespace Cachr.Core;
 
-public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
+public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable, ISubscriber<InboundCacheMessageEnvelope>
 {
-    private readonly ISubscriptionToken _subscriptionToken;
     private readonly IOptions<CachrDistributedCacheOptions> _options;
     private readonly ICacheStorage _storage;
     private readonly IMessageBus<OutboundCacheMessageEnvelope> _messageBus;
-
+    Guid ISubscriptionToken.Id { get; } = Guid.NewGuid();
     public CachrDistributedCache
     (
         ICacheStorage storage,
@@ -24,15 +24,18 @@ public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
     {
         _storage = storage;
         _options = options;
-        _subscriptionToken = inboundMessageBus.Subscribe(OnCacheMessageReceived);
+        inboundMessageBus.Subscribe(this);
         _messageBus = outboundMessageBus;
     }
 
-    private async ValueTask OnCacheMessageReceived(InboundCacheMessageEnvelope envelope)
+    SubscriptionMode ISubscriber<InboundCacheMessageEnvelope>.Mode => SubscriptionMode.All;
+
+    async ValueTask<bool> ISubscriber<InboundCacheMessageEnvelope>.OnMessageAsync(SubscriptionMode mode, InboundCacheMessageEnvelope envelope)
     {
         if (envelope.Target != null && envelope.Target != NodeIdentity.Id)
-            return;
+            return true;
         await HandleMessage(envelope.Message, envelope.Sender).ConfigureAwait(false);
+        return true;
     }
 
     public void BeginPreload()
@@ -280,8 +283,14 @@ public sealed class CachrDistributedCache : ICachrDistributedCache, IDisposable
         await BroadcastAsync(message).ConfigureAwait(false);
     }
 
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        return ValueTask.CompletedTask;
+    }
+
     public void Dispose()
     {
-        _subscriptionToken.Dispose();
+        _messageBus.Unsubscribe(this);
     }
 }

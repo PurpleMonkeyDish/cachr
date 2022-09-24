@@ -31,31 +31,25 @@ public class EndToEndBenchmarks
     private CachrMessageReflector _reflector;
     private readonly IDistributedCache _cache;
 
-    public class CachrMessageReflector : IDisposable
+    public class CachrMessageReflector : SubscriptionBase<OutboundCacheMessageEnvelope>
     {
         private readonly IMessageBus<InboundCacheMessageEnvelope> _inboundMessageBus;
         private readonly IDuplicateTracker<Guid> _duplicateTracker;
-        private readonly ISubscriptionToken _subscriptionToken;
         public CachrMessageReflector(
             IMessageBus<OutboundCacheMessageEnvelope> outboundMessageBus,
             IMessageBus<InboundCacheMessageEnvelope> inboundMessageBus
-        )
+        ) : base(outboundMessageBus, SubscriptionMode.All, null)
         {
             _inboundMessageBus = inboundMessageBus;
             _duplicateTracker = new DuplicateTracker<Guid>();
-            _subscriptionToken = outboundMessageBus.Subscribe(OnOutboundMessage);
+            outboundMessageBus.Subscribe(this);
         }
 
-        private async ValueTask OnOutboundMessage(OutboundCacheMessageEnvelope arg)
+        protected override async ValueTask ProcessMessageAsync(SubscriptionMode mode, OutboundCacheMessageEnvelope message, object? state)
         {
-            if (_duplicateTracker.IsDuplicate(arg.Message.Id)) return;
-            await _inboundMessageBus.BroadcastAsync(new InboundCacheMessageEnvelope(NodeIdentity.Id, arg.Target,
-                arg.Message)).ConfigureAwait(false);
-        }
-
-        public void Dispose()
-        {
-            _subscriptionToken.Dispose();
+            if (_duplicateTracker.IsDuplicate(message.Message.Id)) return;
+            await _inboundMessageBus.BroadcastAsync(new InboundCacheMessageEnvelope(NodeIdentity.Id, message.Target,
+                message.Message)).ConfigureAwait(false);
         }
     }
 

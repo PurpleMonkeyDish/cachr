@@ -10,8 +10,8 @@ public interface ISubscriber<in T> : ISubscriptionToken
 {
     SubscriptionMode Mode { get; }
     bool HandlesMode(SubscriptionMode mode) => Mode == SubscriptionMode.All || Mode.HasFlag(mode);
-    bool WillTryToHandleMessage(SubscriptionMode mode, T message);
-    ValueTask<bool> TryProcessMessageAsync(SubscriptionMode mode, T message);
+    bool WillTryToHandleMessage(SubscriptionMode mode, T message) => true;
+    ValueTask<bool> OnMessageAsync(SubscriptionMode mode, T message);
 }
 
 public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
@@ -73,15 +73,12 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         ).ConfigureAwait(false);
     }
 
-    public ISubscriptionToken Subscribe(Func<T, ValueTask> callback, SubscriptionMode mode = SubscriptionMode.All)
+    public ISubscriptionToken Subscribe(ISubscriber<T> subscriber)
     {
-        return AddSubscription(new SubscriptionToken<T>(callback, this, mode: mode));
-    }
-
-    public ISubscriptionToken Subscribe(Func<T, object?, ValueTask> callback, object? state = null,
-        SubscriptionMode mode = SubscriptionMode.All)
-    {
-        return AddSubscription(new SubscriptionToken<T>(callback, this, state, mode: mode));
+        if ((subscriber.Mode ^ SubscriptionMode.All) == 0) return subscriber;
+        if (!_subscriptions.TryAdd(subscriber.Id, new WeakReference(subscriber))) return subscriber;
+        InvalidateSubscriptionCaches();
+        return subscriber;
     }
 
     public void Unsubscribe(ISubscriptionToken subscriptionToken)
@@ -101,7 +98,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         static async ValueTask<bool> Callback(ISubscriber<T> token, T message)
         {
             if (!token.WillTryToHandleMessage(SubscriptionMode.Broadcast, message)) return false;
-            return await token.TryProcessMessageAsync(SubscriptionMode.Broadcast, message);
+            return await token.OnMessageAsync(SubscriptionMode.Broadcast, message);
         }
 
         var broadcastCallback = Callback;
@@ -194,7 +191,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
             foreach (var subscription in subscriptions)
             {
                 if (!subscription.WillTryToHandleMessage(SubscriptionMode.Targeted, message)) continue;
-                var didProcessMessage = await subscription.TryProcessMessageAsync(SubscriptionMode.Targeted, message)
+                var didProcessMessage = await subscription.OnMessageAsync(SubscriptionMode.Targeted, message)
                     .ConfigureAwait(false);
                 if (didProcessMessage)
                 {
@@ -219,13 +216,6 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         catch (ChannelClosedException)
         {
         }
-    }
-
-    private ISubscriptionToken AddSubscription(ISubscriber<T> subscription)
-    {
-        _subscriptions.TryAdd(subscription.Id, new WeakReference(subscription));
-        InvalidateSubscriptionCaches();
-        return subscription;
     }
 
     private void InvalidateSubscriptionCaches()

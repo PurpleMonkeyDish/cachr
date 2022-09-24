@@ -33,6 +33,19 @@ public class MessageBusIterationBenchmarks
         public AwaitableCompletableMessage Reset() => new AwaitableCompletableMessage();
     }
 
+    private sealed class NoOpSubscriber<T> : SubscriptionBase<T>
+        where T : class
+    {
+        public NoOpSubscriber(IMessageBus<T> messageBus, SubscriptionMode mode, object? state = null) : base(messageBus, mode, state)
+        {
+        }
+
+        protected override ValueTask ProcessMessageAsync(SubscriptionMode mode, T message, object? state)
+        {
+            return ValueTask.CompletedTask;
+        }
+    }
+
     private MessageBus<object>? _messageBus;
     private AwaitableCompletableMessage[] _messages = Array.Empty<AwaitableCompletableMessage>();
     private ISubscriptionToken[] _subscriptionTokens = Array.Empty<ISubscriptionToken>();
@@ -84,10 +97,10 @@ public class MessageBusIterationBenchmarks
         _subscriptionTokens = Enumerable.Range(0, SubscriberCount / 4)
             .SelectMany(x => new[]
             {
-                _messageBus.Subscribe(o => ValueTask.CompletedTask, (SubscriptionMode)0),
-                _messageBus.Subscribe(o => ValueTask.CompletedTask, SubscriptionMode.Broadcast),
-                _messageBus.Subscribe(o => ValueTask.CompletedTask, SubscriptionMode.Targeted),
-                _messageBus.Subscribe(o => ValueTask.CompletedTask, SubscriptionMode.All),
+                new NoOpSubscriber<object>(_messageBus, SubscriptionMode.All),
+                new NoOpSubscriber<object>(_messageBus, SubscriptionMode.Broadcast),
+                new NoOpSubscriber<object>(_messageBus, SubscriptionMode.Targeted),
+                new NoOpSubscriber<object>(_messageBus, 0),
             })
             .ToArray();
     }
