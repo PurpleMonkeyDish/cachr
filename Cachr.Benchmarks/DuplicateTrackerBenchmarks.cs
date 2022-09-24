@@ -25,7 +25,7 @@ public class DuplicateTrackerBenchmarks
     }
 
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     [ArgumentsSource(nameof(NumberRanges))]
     public void DuplicateDetectorAddEntry(TestRange range)
     {
@@ -46,7 +46,7 @@ public class DuplicateTrackerBenchmarks
         }
     }
 
-    [Benchmark]
+    [Benchmark(OperationsPerInvoke = 128)]
     [ArgumentsSource(nameof(NumberRanges))]
     public void DuplicateDetectorAllShardsDuplicateDetection(TestRange range)
     {
@@ -55,7 +55,7 @@ public class DuplicateTrackerBenchmarks
             _tracker.IsDuplicate(x);
     }
 
-    [Benchmark]
+    [Benchmark(OperationsPerInvoke = 4)]
     [ArgumentsSource(nameof(NumberRanges))]
     public void LockContention(TestRange range)
     {
