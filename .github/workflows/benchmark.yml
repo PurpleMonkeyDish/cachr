@@ -1,4 +1,4 @@
-name: "build"
+name: "Benchmarks"
 on:
   push:
     branches:
