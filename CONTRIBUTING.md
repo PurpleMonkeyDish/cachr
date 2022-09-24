@@ -11,13 +11,13 @@ There are many example tests, and all new code is expected to have a suite of te
 Please send a GitHub pull request to jasoncouture/cachr with a clear list of what has changed, and why the changes are needed.
 If your changes are large, please start a discussion before requesting a review. It will save us time, as we're going to ask you to do that anyway!
 
-
 ### Commits are expected to be atomic
 * Commits build independently.
   * You can test this with `git fetch; git rebase origin/main --exec dotnet build`.
 * Commits pass tests
   * You can test this with `git fetch; git rebase origin/main --exec dotnet test`.
 * Commits contain exactly one feature, concern, or refactoring
+
 ### Commits and pull requests are expected to be understandable
 * Each pull request should focus on one group of related things at a time.
 * Please keep commits small where possible
