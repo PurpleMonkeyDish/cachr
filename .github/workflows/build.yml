@@ -9,6 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build_release_configuration:
+    name: "Build"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -24,13 +25,18 @@ jobs:
       - run: dotnet build --no-restore -c Release -property:WarningLevel=0
   build_status_comment_failed:
     runs-on: ubuntu-latest
-    if: failure() && github.event_name == 'pull_request'
     needs:
       - build_release_configuration
     steps:
-      - name: Report build failure
+      - name: 'Report Failure'
         uses: thollander/actions-comment-pull-request@v1
+        if: failure() && github.event_name == 'pull_request'
         with:
           message: 'Your build has failed. Your PR will not be reviewed until this is fixed.'
-          comment_includes: 'your build has started'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Report Success'
+        uses: thollander/actions-comment-pull-request@v1
+        if: success() && github.event_name == 'pull_request'
+        with:
+          message: 'Your build has failed. Your PR will not be reviewed until this is fixed.'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

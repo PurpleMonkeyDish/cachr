@@ -1,4 +1,4 @@
-name: "Unit Tests"
+name: 'Unit Tests'
 on:
   push:
     branches:
@@ -21,15 +21,22 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet test
-  build_status_comment_failed:
+  test_status_comment:
+    name: 'Comment test status'
     runs-on: ubuntu-latest
-    if: failure() && github.event_name == 'pull_request'
     needs:
       - test
     steps:
-      - name: Report test failure
+      - name: 'Failure Comment'
         uses: thollander/actions-comment-pull-request@v1
+        if: failure() && github.event_name == 'pull_request'
         with:
           message: 'Tests are failing, Your changes will not be reviewed until tests pass'
-          comment_includes: 'your build has started'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Success Comment'
+        uses: thollander/actions-comment-pull-request@v1
+        if: success() && github.event_name == 'pull_request'
+        with:
+          message: 'Tests are failing, Your changes will not be reviewed until tests pass'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

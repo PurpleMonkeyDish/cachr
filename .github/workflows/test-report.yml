@@ -1,4 +1,4 @@
-name: "Build test report"
+name: "Unit Test Report"
 on:
   push:
     branches:
@@ -9,6 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build_test_report:
+    name: "Build Test Report"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1

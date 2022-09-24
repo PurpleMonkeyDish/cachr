@@ -49,14 +49,3 @@ jobs:
           auto-push: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: ""
-  build_status_comment_failed:
-    runs-on: ubuntu-latest
-    if: failure() && github.event_name == 'pull_request'
-    needs:
-      - benchmark
-    steps:
-      - name: Report benchmark failure.
-        uses: thollander/actions-comment-pull-request@v1
-        with:
-          message: 'The benchmark has failed. Your PR will not be reviewed until this is fixed.'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
