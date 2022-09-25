@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1664026722550,
+  "lastUpdate": 1664134472178,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark": [
@@ -1524,6 +1524,192 @@ window.BENCHMARK_DATA = {
             "value": 778296.3059895834,
             "unit": "ns",
             "range": "± 15992.044993893438"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5578883aab343e1648c16ec6349e212e26761600",
+          "message": "Fix syntax error in test comment (#28)",
+          "timestamp": "2022-09-25T15:30:33-04:00",
+          "tree_id": "aba84ad763b81eea31ddfa186c3715a5a9a35e53",
+          "url": "https://github.com/jasoncouture/cachr/commit/5578883aab343e1648c16ec6349e212e26761600"
+        },
+        "date": 1664134471663,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.EndToEndCachePerformanceAsync",
+            "value": 2319.7760742187497,
+            "unit": "ns",
+            "range": "± 48.03701803773604"
+          },
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.BroadcastAsyncBenchmark",
+            "value": 7725.047542317708,
+            "unit": "ns",
+            "range": "± 199.21469830178467"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmark",
+            "value": 2416.934181213379,
+            "unit": "ns",
+            "range": "± 112.85600308413238"
+          },
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.SendToAsyncBenchmark",
+            "value": 1134.522235921224,
+            "unit": "ns",
+            "range": "± 5.970444934259895"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmarkAsync",
+            "value": 2479.8332163492837,
+            "unit": "ns",
+            "range": "± 67.79065742653472"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmark",
+            "value": 73.71688075860341,
+            "unit": "ns",
+            "range": "± 0.03307236598354937"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmarkAsync",
+            "value": 104.12155652046204,
+            "unit": "ns",
+            "range": "± 0.015494713079519714"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmark",
+            "value": 2378.34859085083,
+            "unit": "ns",
+            "range": "± 74.65707360396686"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmarkAsync",
+            "value": 2646.6410776774087,
+            "unit": "ns",
+            "range": "± 87.62056568424983"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveBenchmark",
+            "value": 3025.259262084961,
+            "unit": "ns",
+            "range": "± 100.20856740263095"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveAsyncBenchmark",
+            "value": 3456.0947443644204,
+            "unit": "ns",
+            "range": "± 53.77865970977984"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 0)",
+            "value": 1042.9080282847087,
+            "unit": "ns",
+            "range": "± 0.3428798993281761"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 0)",
+            "value": 1454.9608192443848,
+            "unit": "ns",
+            "range": "± 1.339726480143306"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 10)",
+            "value": 629.7831048965454,
+            "unit": "ns",
+            "range": "± 11.834581600379636"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 10)",
+            "value": 1089.4819437662761,
+            "unit": "ns",
+            "range": "± 11.284546397597348"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAddEntry(range: 10)",
+            "value": 1870.496955235799,
+            "unit": "ns",
+            "range": "± 2.362508193544197"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorDuplicate(range: 10)",
+            "value": 1585.391659418742,
+            "unit": "ns",
+            "range": "± 2.1646950762957444"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAllShardsDuplicateDetection(range: 10)",
+            "value": 4257.807792663574,
+            "unit": "ns",
+            "range": "± 4.142854747011779"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.LockContention(range: 10)",
+            "value": 4436.260091145833,
+            "unit": "ns",
+            "range": "± 358.8039568918697"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAddEntry(range: 1000)",
+            "value": 430197.45393880206,
+            "unit": "ns",
+            "range": "± 1031.9399500618256"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorDuplicate(range: 1000)",
+            "value": 144381.36669921875,
+            "unit": "ns",
+            "range": "± 70.73161791531918"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.DuplicateDetectorAllShardsDuplicateDetection(range: 1000)",
+            "value": 428219.9700520833,
+            "unit": "ns",
+            "range": "± 1281.059098477868"
+          },
+          {
+            "name": "Cachr.Benchmarks.DuplicateTrackerBenchmarks.LockContention(range: 1000)",
+            "value": 184054.20581054688,
+            "unit": "ns",
+            "range": "± 2329.3105212244814"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 20)",
+            "value": 609.0041891733805,
+            "unit": "ns",
+            "range": "± 4.558490661035885"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 20)",
+            "value": 1109.8041566212971,
+            "unit": "ns",
+            "range": "± 11.695216653443046"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 50)",
+            "value": 650.8987840016683,
+            "unit": "ns",
+            "range": "± 7.074054541655159"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 50)",
+            "value": 1098.7182299296062,
+            "unit": "ns",
+            "range": "± 3.92550745994576"
           }
         ]
       }
