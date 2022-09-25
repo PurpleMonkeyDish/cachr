@@ -19,7 +19,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: rhysd/github-action-benchmark@v1
+    - uses: benchmark-action/github-action-benchmark@v1
       with:
         tool: 'benchmarkdotnet'
         output-file-path: ${{ inputs.report-path }}
