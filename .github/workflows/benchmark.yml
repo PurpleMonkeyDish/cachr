@@ -8,44 +8,68 @@ concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
-  benchmark:
+  generate_matrix:
     runs-on: ubuntu-latest
+    name: "Generate benchmark matrix"
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/setup-dotnet@v2
+      - id: set-matrix
+        run: |
+          echo "Building matrix from files names containing the word Benchmark, and ending with .cs"
+          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | uniq | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat) '}')
+          echo $matrix
+          echo $matrix | jq .
+          echo "::set-output name=matrix::$matrix"
+## Uncomment this for debugging the generated matrix
+#  verify-matrix:
+#    runs-on: ubuntu-latest
+#    name: "Validate generated matrix"
+#    needs:
+#      - 'generate_matrix'
+#    steps:
+#      - name: Install json2yaml
+#        run: |
+#          sudo npm install -g json2yaml
+#
+#      - name: Check matrix definition
+#        run: |
+#          matrix='${{ needs.generate_matrix.outputs.matrix }}'
+#          echo $matrix
+#          echo $matrix | jq .
+#          echo $matrix | json2yaml
+
+  run:
+    runs-on: ubuntu-latest
+    needs:
+      - 'generate_matrix'
+    strategy:
+      matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
+    name: "Benchmark - ${{ matrix.name }}"
+    steps:
+      - uses: actions/checkout@v1
+      - uses: './.github/template/benchmark'
         with:
-          dotnet-version: '6.0.x'
-      - uses: actions/cache@v3
+          benchmark-name: ${{ matrix.name }}
+          benchmark-filter: ${{ matrix.name }}
+  report_results:
+    runs-on: ubuntu-latest
+    needs:
+      - 'generate_matrix'
+      - 'run'
+    strategy:
+      max-parallel: 1
+      matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
+    name: "Finalize - ${{ matrix.name }}"
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/download-artifact@v3
+        name: "Download artifacts for ${{ matrix.name }}"
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: ${{ runner.os }}-nuget-
-      - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
-      - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*' -i
-      - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report.json
-      - name: 'Report Result'
-        uses: rhysd/github-action-benchmark@v1
-        if: github.ref == 'refs/heads/main'
+          name: benchmark-report-${{ matrix.name }}
+      - uses: "./.github/template/benchmark-upload"
         with:
-          tool: 'benchmarkdotnet'
-          output-file-path: ./report.json  # BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
-          alert-threshold: '200%'
-          comment-on-alert: false
-          comment-always: false
-          fail-on-alert: false
-          auto-push: true
+          report-path: ./report-${{ matrix.name }}.json
+          name: Benchmark - ${{ matrix.name }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          benchmark-data-dir-path: ""
-      - name: 'Store Result'
-        uses: rhysd/github-action-benchmark@v1
-        if: github.ref != 'refs/heads/main'
-        with:
-          tool: 'benchmarkdotnet'
-          output-file-path: ./report.json  # BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
-          alert-threshold: '200%'
-          comment-on-alert: true
-          comment-always: true
-          fail-on-alert: true
-          auto-push: false
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          benchmark-data-dir-path: ""

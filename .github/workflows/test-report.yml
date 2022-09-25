@@ -2,8 +2,7 @@ name: "Unit Test Report"
 on:
   push:
     branches:
-      - '*'
-      - '!main'
+      - 'main'
   pull_request: { }
 concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
@@ -26,9 +25,9 @@ jobs:
         with:
           report_name: unit_tests
           report_title: Unit Test Results
-          set_check_status_from_test_outcome: true
+          set_check_status_from_test_outcome: false
           extra_test_parameters: '-property:WarningLevel=0'
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          gist_name: dotnet-tests-report_xunit.md
+          gist_name: cachr-test-report.md
           gist_badge_label: 'Tests: %Counters_passed%/%Counters_total%'
           gist_token: ${{ secrets.GIST_TOKEN }}
