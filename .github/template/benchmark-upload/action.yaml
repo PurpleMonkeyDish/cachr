@@ -29,7 +29,7 @@ runs:
       if: github.ref != 'refs/heads/main'
       with:
         tool: 'benchmarkdotnet'
-        output-file-path: ${{ inputs.report_path }}
+        output-file-path: ${{ inputs.report-path }}
         alert-threshold: '200%'
         comment-on-alert: true
         comment-always: true
