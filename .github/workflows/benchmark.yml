@@ -25,12 +25,12 @@ jobs:
       - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report.json
       - name: 'Report Result'
         uses: rhysd/github-action-benchmark@v1
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         with:
           tool: 'benchmarkdotnet'
           output-file-path: ./report.json  # BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
           alert-threshold: '200%'
-          comment-on-alert: true
+          comment-on-alert: false
           comment-always: false
           fail-on-alert: false
           auto-push: true
@@ -38,7 +38,7 @@ jobs:
           benchmark-data-dir-path: ""
       - name: 'Store Result'
         uses: rhysd/github-action-benchmark@v1
-        if: github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/main'
         with:
           tool: 'benchmarkdotnet'
           output-file-path: ./report.json  # BenchmarkDotNet.Artifacts/results/Cachr.Benchmarks.DuplicateTrackerBenchmarks-report-full-compressed.json
