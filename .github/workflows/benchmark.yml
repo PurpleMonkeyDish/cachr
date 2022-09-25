@@ -22,20 +22,21 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
       - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*' -i
-      - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report.json
+      - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report-all.json
       - uses: actions/upload-artifact@v3
         with:
-          name: benchmark-report
-          path: report.json
+          name: benchmark-report-all
+          path: ./report-*.json
   report:
     runs-on: ubuntu-latest
     needs:
       - benchmark
     steps:
+      - uses: actions/checkout@v1
       - uses: actions/download-artifact@v3
         with:
-          name: benchmark-report
-      - name: 'Report Result'
+          name: benchmark-report-all
+      - name: 'Store Result'
         uses: rhysd/github-action-benchmark@v1
         if: github.ref == 'refs/heads/main'
         with:
@@ -48,7 +49,7 @@ jobs:
           auto-push: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: ""
-      - name: 'Store Result'
+      - name: 'Report Result'
         uses: rhysd/github-action-benchmark@v1
         if: github.ref != 'refs/heads/main'
         with:
