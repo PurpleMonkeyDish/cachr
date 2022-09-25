@@ -2,7 +2,8 @@ name: "Unit Test Report"
 on:
   push:
     branches:
-      - 'main'
+      - '*'
+      - '!main'
   pull_request: { }
 concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
