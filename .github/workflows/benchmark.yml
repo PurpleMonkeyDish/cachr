@@ -23,6 +23,18 @@ jobs:
       - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
       - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*' -i
       - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report.json
+      - uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-report
+          path: report.json
+  report:
+    runs-on: ubuntu-latest
+    needs:
+      - benchmark
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: benchmark-report
       - name: 'Report Result'
         uses: rhysd/github-action-benchmark@v1
         if: github.ref == 'refs/heads/main'
