@@ -9,7 +9,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ "ubuntu-22.04", "ubuntu-20.04", "macos-11", "macos-12", "windows-2019", "windows-2022" ]
+    runs-on: ${{matrix.os}}
+    name: "Unit Tests on ${{ matrix.os }}"
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-dotnet@v2
@@ -21,23 +25,4 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet test
-  test_status_comment:
-    name: 'Comment test status'
-    runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main'
-    needs:
-      - test
-    steps:
-      - name: 'Failure Comment'
-        uses: thollander/actions-comment-pull-request@v1
-        if: failure() && github.event_name == 'pull_request'
-        with:
-          message: 'Tests are failing, Your changes will not be reviewed until tests pass'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'Success Comment'
-        uses: thollander/actions-comment-pull-request@v1
-        if: success() && github.event_name == 'pull_request'
-        with:
-          message: ':heavy_check_mark: - Unit tests have passed.'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

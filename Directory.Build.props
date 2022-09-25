@@ -2,4 +2,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Cachr.UnitTests"/>
   </ItemGroup>
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+  </PropertyGroup>
 </Project>

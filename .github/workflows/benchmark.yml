@@ -18,7 +18,7 @@ jobs:
       - id: set-matrix
         run: |
           echo "Building matrix from files names containing the word Benchmark, and ending with .cs"
-          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | uniq | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat) '}')
+          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | uniq | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat), '"os": [ "ubuntu-22.04", "ubuntu-20.04", "macos-11", "macos-12", "windows-2019", "windows-2022" ]}')
           echo $matrix
           echo $matrix | jq .
           echo "::set-output name=matrix::$matrix"
@@ -46,12 +46,12 @@ jobs:
       - 'generate_matrix'
     strategy:
       matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
-    name: "Benchmark - ${{ matrix.name }}"
+    name: "Benchmark - ${{ matrix.name }} - ${{ matrix.os }}"
     steps:
       - uses: actions/checkout@v1
       - uses: './.github/template/benchmark'
         with:
-          benchmark-name: ${{ matrix.name }}
+          benchmark-name: ${{ matrix.name }}-${{ matrix.os }}
           benchmark-filter: ${{ matrix.name }}
   report_results:
     runs-on: ubuntu-latest
@@ -61,15 +61,17 @@ jobs:
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
-    name: "Finalize - ${{ matrix.name }}"
+    name: "Finalize - ${{ matrix.name }} - ${{ matrix.os }}"
     steps:
       - uses: actions/checkout@v1
       - uses: actions/download-artifact@v3
-        name: "Download artifacts for ${{ matrix.name }}"
+        name: "Download artifacts for ${{ matrix.name }} - ${{ matrix.os }}"
         with:
-          name: benchmark-report-${{ matrix.name }}
+          name: benchmark-report-${{ matrix.name }}-${{ matrix.os }}
       - uses: "./.github/template/benchmark-upload"
+        name: "Report benchmark results for ${{ matrix.name }} - ${{ matrix.os }}"
         with:
-          report-path: ./report-${{ matrix.name }}.json
-          name: Benchmark - ${{ matrix.name }}
+          report-path: ./report-${{ matrix.name }}-${{ matrix.os }}.json
+          name: Benchmark - ${{ matrix.name }} - ${{ matrix.os }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          is_main_branch: ${{ github.ref == 'refs/heads/main' }}
