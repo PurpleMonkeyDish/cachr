@@ -69,5 +69,5 @@ jobs:
           name: benchmark-report-${{ matrix.name }}
       - uses: "./.github/template/benchmark-upload"
         with:
-          output-file-path: ./report-${{ matrix.name }}.json
+          report-path: ./report-${{ matrix.name }}.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
