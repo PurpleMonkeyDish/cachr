@@ -2,15 +2,16 @@ using System.Collections.Immutable;
 
 namespace Cachr.Core.Discovery;
 
-public sealed record PeerStateUpdateMessage(Guid Id, PeerState State, Peer Peer, ImmutableArray<Peer> Connections, long TimeStamp)
+public sealed record PeerStateUpdateMessage(Guid Id, PeerState State, Peer Peer, ImmutableHashSet<Guid> ActiveConnections, ImmutableHashSet<Guid> AvailableConnections, long TimeStamp)
 {
-    public static PeerStateUpdateMessage Create(PeerState state, Peer peer, IEnumerable<Peer> connections)
+    public static PeerStateUpdateMessage Create(PeerState state, Peer peer, IEnumerable<Guid> activeConnections, IEnumerable<Guid> availableConnections)
     {
         return new(
             peer.Id,
             state,
             peer,
-            connections is ImmutableArray<Peer> array ? array : connections.ToImmutableArray(),
+            activeConnections.ToImmutableHashSet(),
+            availableConnections.ToImmutableHashSet(),
             TimeStamp: DateTimeOffset.Now.ToUnixTimeMilliseconds()
         );
     }

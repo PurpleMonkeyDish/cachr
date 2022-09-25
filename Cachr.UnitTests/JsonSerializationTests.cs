@@ -32,13 +32,7 @@ public sealed class JsonSerializationTests
         yield return CacheGossipMessage.Create(Guid.Empty, RentedArray<byte>.Empty);
         yield return CacheGossipMessage.Create(Guid.NewGuid(), RentedArray<byte>.FromDefaultPool(16));
         yield return CacheGossipMessage.Create(Guid.NewGuid(), RentedArray<byte>.FromDefaultPool(8192));
-        yield return CacheGossipMessage.Create(Guid.NewGuid(), PeerStateUpdateMessage.Create(PeerState.Full, fakePeer,  new[]
-            {
-                fakePeer,
-                fakePeer,
-                fakePeer,
-                fakePeer with { EndPoints = Enumerable.Range(0, 100).Select(x => x.ToString()).ToImmutableArray() }
-            }));
+        yield return CacheGossipMessage.Create(Guid.NewGuid(), PeerStateUpdateMessage.Create(PeerState.Full, fakePeer, Array.Empty<Guid>(), Array.Empty<Guid>()));
     }
 
     [Theory]

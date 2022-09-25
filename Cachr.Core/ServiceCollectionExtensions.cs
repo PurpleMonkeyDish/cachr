@@ -21,9 +21,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICachrDistributedCache, CachrDistributedCache>();
         services.AddSingleton<IDistributedCache>(s => s.GetRequiredService<ICachrDistributedCache>());
         services.AddSingleton(typeof(IMessageBus<>), typeof(MessageBus<>));
-        services.AddSingleton<IPeerSelector, PeerSelector>();
-        services.AddSingleton<IPeerStatusTracker, PeerStatusTracker>();
-        services.AddSingleton<IPeerMessagingHandler, PeerMessagingHandler>();
     }
 
     public static IServiceCollection AddCachr(this IServiceCollection services, IConfiguration configuration)
