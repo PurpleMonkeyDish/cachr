@@ -18,26 +18,27 @@ jobs:
       - id: set-matrix
         run: |
           echo "Building matrix from files names containing the word Benchmark, and ending with .cs"
-          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat) '}')
+          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | uniq | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat) '}')
           echo $matrix
           echo $matrix | jq .
           echo "::set-output name=matrix::$matrix"
-  verify-matrix:
-    runs-on: ubuntu-latest
-    name: "Validate generated matrix"
-    needs:
-      - 'generate_matrix'
-    steps:
-      - name: Install json2yaml
-        run: |
-          sudo npm install -g json2yaml
-
-      - name: Check matrix definition
-        run: |
-          matrix='${{ needs.generate_matrix.outputs.matrix }}'
-          echo $matrix
-          echo $matrix | jq .
-          echo $matrix | json2yaml
+## Uncomment this for debugging the generated matrix
+#  verify-matrix:
+#    runs-on: ubuntu-latest
+#    name: "Validate generated matrix"
+#    needs:
+#      - 'generate_matrix'
+#    steps:
+#      - name: Install json2yaml
+#        run: |
+#          sudo npm install -g json2yaml
+#
+#      - name: Check matrix definition
+#        run: |
+#          matrix='${{ needs.generate_matrix.outputs.matrix }}'
+#          echo $matrix
+#          echo $matrix | jq .
+#          echo $matrix | json2yaml
 
   run:
     runs-on: ubuntu-latest
