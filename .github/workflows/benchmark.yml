@@ -73,3 +73,4 @@ jobs:
           report-path: ./report-${{ matrix.name }}.json
           name: Benchmark - ${{ matrix.name }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          is_main_branch: ${{ github.ref == 'refs/heads/main' }}

@@ -12,33 +12,22 @@ inputs:
   name:
     required: true
     description: "Benchmark name"
+  is_main_branch:
+    required: true
+    description: 'Indicates if this is the main branch, which will disable comments and failures, and enable pushing'
 
 runs:
   using: "composite"
   steps:
     - uses: rhysd/github-action-benchmark@v1
-      if: github.ref == 'refs/heads/main'
       with:
         tool: 'benchmarkdotnet'
         output-file-path: ${{ inputs.report-path }}
         alert-threshold: '200%'
-        comment-on-alert: false
-        comment-always: false
-        fail-on-alert: false
-        auto-push: true
-        github-token: ${{ inputs.github-token }}
-        benchmark-data-dir-path: ""
-        name: ${{ inputs.name }}
-    - uses: rhysd/github-action-benchmark@v1
-      if: github.ref != 'refs/heads/main'
-      with:
-        tool: 'benchmarkdotnet'
-        output-file-path: ${{ inputs.report-path }}
-        alert-threshold: '200%'
-        comment-on-alert: true
-        comment-always: true
-        fail-on-alert: true
-        auto-push: false
+        comment-on-alert: ${{ inputs.is_main_branch == false }}
+        comment-always: ${{ inputs.is_main_branch == false }}
+        fail-on-alert: ${{ inputs.is_main_branch == false }}
+        auto-push: ${{ inputs.is_main_branch == true }}
         github-token: ${{ inputs.github-token }}
         benchmark-data-dir-path: ""
         name: ${{ inputs.name }}
