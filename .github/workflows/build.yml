@@ -9,13 +9,20 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build_release_configuration:
-    name: "Build - Configuration: ${{matrix.configuration}}"
+    name: "Build - Configuration: ${{matrix.configuration}} - ${{matrix.os}}"
     strategy:
       matrix:
         configuration:
           - Release
           - Debug
-    runs-on: ubuntu-latest
+        os:
+          - ubuntu-22.04
+          - ubuntu-20.04
+          - macos-11
+          - macos-12
+          - windows-2019
+          - windows-2022
+    runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-dotnet@v2
@@ -28,20 +35,3 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
       - run: dotnet restore
       - run: dotnet build --no-restore -c ${{matrix.configuration}} -property:WarningLevel=0
-  build_status_comment_failed:
-    runs-on: ubuntu-latest
-    needs:
-      - build_release_configuration
-    steps:
-      - name: 'Report Failure'
-        uses: thollander/actions-comment-pull-request@v1
-        if: failure() && github.event_name == 'pull_request'
-        with:
-          message: 'Your build has failed. Your PR will not be reviewed until this is fixed.'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'Report Success'
-        uses: thollander/actions-comment-pull-request@v1
-        if: success() && github.event_name == 'pull_request'
-        with:
-          message: ':heavy_check_mark: - Build has passed'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
