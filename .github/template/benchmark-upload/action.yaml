@@ -9,6 +9,9 @@ inputs:
   github-token:
     required: true
     description: "Github token"
+  name:
+    required: true
+    description: "Benchmark name"
 
 runs:
   using: "composite"
@@ -25,6 +28,7 @@ runs:
         auto-push: true
         github-token: ${{ inputs.github-token }}
         benchmark-data-dir-path: ""
+        name: ${{ inputs.name }}
     - uses: rhysd/github-action-benchmark@v1
       if: github.ref != 'refs/heads/main'
       with:
@@ -37,3 +41,4 @@ runs:
         auto-push: false
         github-token: ${{ inputs.github-token }}
         benchmark-data-dir-path: ""
+        name: ${{ inputs.name }}
