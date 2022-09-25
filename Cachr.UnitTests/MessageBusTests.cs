@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Cachr.UnitTests;
 
-public class MessageBusTests
+public sealed class MessageBusTests
 {
     [Fact]
     public async Task MessageBusBroadcastDisposesMessagesWithIDisposable()
