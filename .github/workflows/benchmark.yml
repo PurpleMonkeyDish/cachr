@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: './.github/template/benchmark'
         with:
-          benchmark-name: benchmark-report-${{ matrix.name }}-${{ matrix.os }}
+          benchmark-name: ${{ matrix.name }}-${{ matrix.os }}
           benchmark-filter: ${{ matrix.name }}
   report_results:
     runs-on: ubuntu-latest
