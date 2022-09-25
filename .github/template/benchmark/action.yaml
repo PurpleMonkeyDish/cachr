@@ -5,11 +5,11 @@ description: "Finish processing single benchmark report"
 inputs:
   benchmark-name:
     required: true
-    description: "Benchmark name, the report will be named report-${{ inputs.benchmark-name }}.json in the root directory"
+    description: "This sets the name of the artifact, and report file."
   benchmark-filter:
     required: false
-    default: ''
     description: "Benchmark filter used to select which benchmarks to run"
+    default: ''
 
 runs:
   using: "composite"
