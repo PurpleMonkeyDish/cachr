@@ -6,6 +6,9 @@ inputs:
   report-path:
     required: true
     description: "Path of the report file to import"
+  github-token:
+    required: true
+    description: "Github token"
 
 runs:
   using: "composite"
@@ -20,7 +23,7 @@ runs:
         comment-always: false
         fail-on-alert: false
         auto-push: true
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ inputs.github-token }}
         benchmark-data-dir-path: ""
     - uses: rhysd/github-action-benchmark@v1
       if: github.ref != 'refs/heads/main'
@@ -32,5 +35,5 @@ runs:
         comment-always: true
         fail-on-alert: true
         auto-push: false
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ inputs.github-token }}
         benchmark-data-dir-path: ""
