@@ -26,7 +26,7 @@ runs:
       shell: bash
     - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*${{ inputs.benchmark-filter }}*' -i
       shell: bash
-    - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report-${{ inputs.benchmark-name }}.json
+    - run: mv BenchmarkDotNet.Artifacts/results/*-report-full-compressed.json ./report-${{ inputs.benchmark-name }}.json
       shell: bash
     - uses: actions/upload-artifact@v3
       with:
