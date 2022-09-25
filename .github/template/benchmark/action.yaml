@@ -1,0 +1,31 @@
+﻿name: benchmark-upload
+description: "Finish processing single benchmark report"
+
+# Were we can define the inputs that our action will accept
+inputs:
+  benchmark-name:
+    required: true
+    description: "Benchmark name, the report will be named report-${{ inputs.benchmark-name }}.json in the root directory"
+  benchmark-filter:
+    required: false
+    default: ''
+    description: "Benchmark filter used to select which benchmarks to run"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '6.0.x'
+    - uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+        restore-keys: ${{ runner.os }}-nuget-
+    - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
+    - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*${{ inputs.benchmark-filter }}*' -i
+    - run: mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json ./report-${{ inputs.benchmark-name }}.json
+    - uses: actions/upload-artifact@v3
+      with:
+       name: benchmark-report-${{ inputs.benchmark-name }}
+       path: ./report-${{ inputs.benchmark-name }}.json

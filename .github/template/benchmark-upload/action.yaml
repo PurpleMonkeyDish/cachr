@@ -1,0 +1,36 @@
+﻿name: benchmark-upload
+description: "Finish processing single benchmark report"
+
+# Were we can define the inputs that our action will accept
+inputs:
+  report-path:
+    required: true
+    description: "Path of the report file to import"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: rhysd/github-action-benchmark@v1
+      if: github.ref == 'refs/heads/main'
+      with:
+        tool: 'benchmarkdotnet'
+        output-file-path: ${{ inputs.report-path }}
+        alert-threshold: '200%'
+        comment-on-alert: false
+        comment-always: false
+        fail-on-alert: false
+        auto-push: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        benchmark-data-dir-path: ""
+    - uses: rhysd/github-action-benchmark@v1
+      if: github.ref != 'refs/heads/main'
+      with:
+        tool: 'benchmarkdotnet'
+        output-file-path: ${{ inputs.report_path }}
+        alert-threshold: '200%'
+        comment-on-alert: true
+        comment-always: true
+        fail-on-alert: true
+        auto-push: false
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        benchmark-data-dir-path: ""
