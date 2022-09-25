@@ -12,9 +12,12 @@ inputs:
   name:
     required: true
     description: "Benchmark name"
-  is_main_branch:
+  push-pages:
     required: true
     description: 'Indicates if this is the main branch, which will disable comments and failures, and enable pushing'
+  comment:
+    required: true
+    description: "Controls if we post a comment on the commit or not."
 
 runs:
   using: "composite"
@@ -24,10 +27,10 @@ runs:
         tool: 'benchmarkdotnet'
         output-file-path: ${{ inputs.report-path }}
         alert-threshold: '200%'
-        comment-on-alert: ${{ inputs.is_main_branch == false }}
-        comment-always: ${{ inputs.is_main_branch == false }}
-        fail-on-alert: ${{ inputs.is_main_branch == false }}
-        auto-push: ${{ inputs.is_main_branch == true }}
+        comment-on-alert: ${{ inputs.comment }}
+        comment-always: ${{ inputs.comment }}
+        fail-on-alert: ${{ inputs.comment }}
+        auto-push: ${{ inputs.push-pages }}
         github-token: ${{ inputs.github-token }}
         benchmark-data-dir-path: ""
         name: ${{ inputs.name }}

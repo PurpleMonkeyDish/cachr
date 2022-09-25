@@ -74,4 +74,5 @@ jobs:
           report-path: ./report-${{ matrix.name }}-${{ matrix.os }}.json
           name: Benchmark - ${{ matrix.name }} - ${{ matrix.os }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          is_main_branch: ${{ github.ref == 'refs/heads/main' }}
+          push-pages: ${{ github.ref == 'refs/heads/main' }}
+          comment: ${{ github.ref != 'refs/heads/main' }}
