@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1664134472178,
+  "lastUpdate": 1664143178766,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark": [
@@ -1710,6 +1710,44 @@ window.BENCHMARK_DATA = {
             "value": 1098.7182299296062,
             "unit": "ns",
             "range": "± 3.92550745994576"
+          }
+        ]
+      }
+    ],
+    "Benchmark - MessageBusIterationBenchmarks": [
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6b9b615e76c9e75cc175769e2c82e91b66cbb323",
+          "message": "Action fixes (#29)",
+          "timestamp": "2022-09-25T17:57:30-04:00",
+          "tree_id": "71778f38cb95aaf5f42713ade13e356b04caa0b0",
+          "url": "https://github.com/jasoncouture/cachr/commit/6b9b615e76c9e75cc175769e2c82e91b66cbb323"
+        },
+        "date": 1664143178465,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.BroadcastAsyncBenchmark",
+            "value": 9845.069576822916,
+            "unit": "ns",
+            "range": "± 2186.389564283153"
+          },
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.SendToAsyncBenchmark",
+            "value": 1357.6422737630207,
+            "unit": "ns",
+            "range": "± 104.34351633644405"
           }
         ]
       }
