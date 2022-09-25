@@ -18,7 +18,7 @@ jobs:
       - id: set-matrix
         run: |
           echo "Building matrix from files names containing the word Benchmark, and ending with .cs"
-          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | uniq | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat), '"os": [ "ubuntu-22.04", "ubuntu-20.04", "macos-11", "macos-12", "windows-2019", "windows-2022" ]}')
+          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | uniq | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat), '"os": [ "ubuntu-latest", "macos-latest", "windows-latest" ]}')
           echo $matrix
           echo $matrix | jq .
           echo "::set-output name=matrix::$matrix"
@@ -41,7 +41,7 @@ jobs:
 #          echo $matrix | json2yaml
 
   run:
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
     needs:
       - 'generate_matrix'
     strategy:
