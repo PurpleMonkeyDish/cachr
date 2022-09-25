@@ -37,7 +37,7 @@ public sealed class MeshSolverTests
         var unreachablePeers = _meshSolver.GetUnreachablePeers(peerMap);
 
         Assert.NotEmpty(unreachablePeers);
-        Assert.Equal(peerMap.Keys.OrderBy(i => i), unreachablePeers.OrderBy(i => i));
+        Assert.Equal(partitionB.OrderBy(i => i), unreachablePeers.OrderBy(i => i));
     }
 
     [Fact]
