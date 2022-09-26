@@ -2,15 +2,11 @@ name: builds
 description: "Builds .NET application or solution"
 
 inputs:
-  runtime-version:
-    required: true
-    description: |
-      Set the runtime version to build.
   no-warnings:
     required: false
     description: |
       Disable build warnings
-    default: true
+    default: 'true'
   configuration:
     required: false
     description: |
@@ -27,9 +23,9 @@ runs:
   using: "composite"
   steps:
     - shell: bash
-      if: inputs.no-warnings == true
-      run: dotnet build -f ${{inputs.runtime-version}} -c ${{inputs.configuration}} --disable-build-servers -m:1 --no-restore -property:WarningLevel=0 ${{inputs.extra-args}}
+      if: inputs.no-warnings == 'true'
+      run: dotnet build -c ${{inputs.configuration}} --no-restore -property:WarningLevel=0 ${{inputs.extra-args}}
     - shell: bash
-      if: inputs.no-warnings != true
-      run: dotnet build -f ${{inputs.runtime-version}} -c ${{inputs.configuration}} --disable-build-servers -m:1 --no-restore ${{inputs.extra-args}}
+      if: inputs.no-warnings != 'true'
+      run: dotnet build -c ${{inputs.configuration}} --no-restore ${{inputs.extra-args}}
 

@@ -21,10 +21,19 @@ runs:
         dotnet-version: ${{ inputs.dotnet-version }}
         include-prerelease: true
     - uses: actions/cache@v3
+      id: cache-nuget
       with:
         path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.csproj')}}
         restore-keys: ${{ runner.os }}-nuget-
-    - run: dotnet restore
-      shell: bash
-      if: inputs.restore-packages
+    - uses: actions/cache@v3
+      id: cache-binaries
+      if: steps.cache-nuget.outputs.cache-hit == 'true'
+      with:
+        path: |
+          **/obj/**/*
+          **/bin/**/*
+        key: ${{ runner.os }}-bin-${{ hashFiles('**/packages.lock.json') }}-${{hashFiles('**/*.cs')}}-${{ hashFiles('**/*.csproj')}}
+    - shell: bash
+      if: steps.cache-nuget.outputs.cache-hit != 'true' && steps.cache-binaries.outputs.cache-hit != 'true'
+      run: dotnet restore

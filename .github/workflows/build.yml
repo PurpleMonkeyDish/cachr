@@ -9,46 +9,34 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build_release:
-    concurrency:
-      group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}-${{matrix.os}}
-    name: "Release: ${{matrix.framework}} on ${{matrix.os}}"
+    name: "Build release on ${{matrix.os}}"
     strategy:
       matrix:
         os:
           - "ubuntu-latest"
           - "macos-latest"
           - "windows-latest"
-        framework:
-          - "net6.0"
-          - "net7.0"
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/template/prepare
       - uses: ./.github/template/build
         with:
-          runtime-version: ${{matrix.framework}}
           configuration: "Release"
   build_debug:
-    concurrency:
-      group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}-${{matrix.os}}
-    name: "Debug: ${{matrix.framework}} on ${{matrix.os}}"
+    name: "Build debug on ${{matrix.os}}"
     strategy:
       matrix:
         os:
           - "ubuntu-latest"
           - "macos-latest"
           - "windows-latest"
-        framework:
-          - "net6.0"
-          - "net7.0"
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/template/prepare
       - uses: ./.github/template/build
         with:
-          runtime-version: ${{matrix.framework}}
           configuration: "Debug"
   build-and-report-warnings:
     name: "Project Builds"
@@ -58,21 +46,9 @@ jobs:
       - uses: ./.github/template/prepare
       - uses: ./.github/template/build
         with:
-          runtime-version: net7.0
-          configuration: Debug
+          configuration: Release
           no-warnings: false
       - uses: ./.github/template/build
         with:
-          runtime-version: net7.0
-          configuration: Release
-          no-warnings: true
-      - uses: ./.github/template/build
-        with:
-          runtime-version: net6.0
-          configuration: Debug
-          no-warnings: true
-      - uses: ./.github/template/build
-        with:
-          runtime-version: net6.0
           configuration: Debug
           no-warnings: true
