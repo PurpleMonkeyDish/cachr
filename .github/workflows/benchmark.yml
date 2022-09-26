@@ -22,23 +22,6 @@ jobs:
           echo $matrix
           echo $matrix | jq .
           echo "::set-output name=matrix::$matrix"
-## Uncomment this for debugging the generated matrix
-#  verify-matrix:
-#    runs-on: ubuntu-latest
-#    name: "Validate generated matrix"
-#    needs:
-#      - 'generate_matrix'
-#    steps:
-#      - name: Install json2yaml
-#        run: |
-#          sudo npm install -g json2yaml
-#
-#      - name: Check matrix definition
-#        run: |
-#          matrix='${{ needs.generate_matrix.outputs.matrix }}'
-#          echo $matrix
-#          echo $matrix | jq .
-#          echo $matrix | json2yaml
 
   run:
     runs-on: ${{matrix.os}}
