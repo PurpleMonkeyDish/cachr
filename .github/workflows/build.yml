@@ -40,15 +40,9 @@ jobs:
           configuration: "Debug"
   build-and-report-warnings:
     name: "Project Builds"
+    needs:
+      - build_release
+      - build_debug
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/template/prepare
-      - uses: ./.github/template/build
-        with:
-          configuration: Release
-          no-warnings: false
-      - uses: ./.github/template/build
-        with:
-          configuration: Debug
-          no-warnings: true
+      - run: exit 0

@@ -8,7 +8,6 @@ runs:
       with:
         dotnet-version: |
           6.0.x
-          7.0.x
         include-prerelease: true
     - uses: actions/cache@v3
       id: cache-nuget
@@ -22,7 +21,6 @@ runs:
         path: |
           **/obj
           **/bin
-        key: ${{ runner.os }}-build-output-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.cs') }}-${{ hashFiles('**/*.csproj')}}-{{ hashFiles('Directory.Build.props') }}
+        key: ${{ runner.os }}-build-output-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.cs') }}-${{ hashFiles('**/*.csproj')}}-${{ hashFiles('Directory.Build.props') }}-${{ hashFiles('~/.dotnet/**') }}
     - shell: bash
-      if: steps.cache-nuget.outputs.cache-hit != 'true' || steps.cache-binaries.outputs.cache-hit != 'true'
       run: dotnet restore

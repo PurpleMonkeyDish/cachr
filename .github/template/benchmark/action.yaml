@@ -14,7 +14,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - run: dotnet run -c Release --no-restore -property:WarningLevel=0 --project Cachr.Benchmarks -- --job short --filter '*${{ inputs.benchmark-filter }}*' -r net6.0 net7.0
+    - run: dotnet run -c Release -property:WarningLevel=0 --project Cachr.Benchmarks -- --job short --filter '${{ inputs.benchmark-filter }}*' -i
       shell: bash
     - run: mv BenchmarkDotNet.Artifacts/results/*-report-full-compressed.json ./report-${{ inputs.benchmark-name }}.json
       shell: bash
