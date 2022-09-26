@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1664223914720,
+  "lastUpdate": 1664223935794,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -1518,6 +1518,44 @@ window.BENCHMARK_DATA = {
             "value": 1215.4327128092448,
             "unit": "ns",
             "range": "± 46.970237265946416"
+          }
+        ]
+      }
+    ],
+    "Benchmark - Cachr.Benchmarks.MessageBusIterationBenchmarks - macos-latest": [
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "935faa7c5576a24c70110f7284a38ec76868d4fd",
+          "message": "Add .NET 7 support (#32)",
+          "timestamp": "2022-09-26T16:17:17-04:00",
+          "tree_id": "5e51edc16c2a7cf874220b7867b1a65c3415c796",
+          "url": "https://github.com/jasoncouture/cachr/commit/935faa7c5576a24c70110f7284a38ec76868d4fd"
+        },
+        "date": 1664223933918,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.BroadcastAsyncBenchmark",
+            "value": 33363.861139322915,
+            "unit": "ns",
+            "range": "± 3920.343492973074"
+          },
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.SendToAsyncBenchmark",
+            "value": 1040.2711987304688,
+            "unit": "ns",
+            "range": "± 257.9484899724139"
           }
         ]
       }
