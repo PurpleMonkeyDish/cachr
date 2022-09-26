@@ -8,33 +8,71 @@ concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
-  build:
-    name: "Build - Configuration: ${{matrix.configuration}} - ${{matrix.os}}"
+  build_release:
+    concurrency:
+      group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}-${{matrix.os}}
+    name: "Release: ${{matrix.framework}} on ${{matrix.os}}"
     strategy:
       matrix:
-        configuration:
-          - Release
-          - Debug
-        os: [ "ubuntu-latest", "macos-latest",  "windows-latest" ]
+        os:
+          - "ubuntu-latest"
+          - "macos-latest"
+          - "windows-latest"
         framework:
-          - net6.0
-          - net7.0
+          - "net6.0"
+          - "net7.0"
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - uses: ./.github/template/prepare
       - uses: ./.github/template/build
         with:
           runtime-version: ${{matrix.framework}}
-          configuration: ${{matrix.configuration}}
+          configuration: "Release"
+  build_debug:
+    concurrency:
+      group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}-${{matrix.os}}
+    name: "Debug: ${{matrix.framework}} on ${{matrix.os}}"
+    strategy:
+      matrix:
+        os:
+          - "ubuntu-latest"
+          - "macos-latest"
+          - "windows-latest"
+        framework:
+          - "net6.0"
+          - "net7.0"
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
+        with:
+          runtime-version: ${{matrix.framework}}
+          configuration: "Debug"
   build-and-report-warnings:
-    name: "Build debug mode and report warnings"
+    name: "Project Builds"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - uses: ./.github/template/prepare
       - uses: ./.github/template/build
         with:
           runtime-version: net7.0
           configuration: Debug
           no-warnings: false
+      - uses: ./.github/template/build
+        with:
+          runtime-version: net7.0
+          configuration: Release
+          no-warnings: true
+      - uses: ./.github/template/build
+        with:
+          runtime-version: net6.0
+          configuration: Debug
+          no-warnings: true
+      - uses: ./.github/template/build
+        with:
+          runtime-version: net6.0
+          configuration: Debug
+          no-warnings: true
