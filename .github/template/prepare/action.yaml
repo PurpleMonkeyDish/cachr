@@ -31,9 +31,9 @@ runs:
       if: steps.cache-nuget.outputs.cache-hit == 'true'
       with:
         path: |
-          **/obj/**/*
-          **/bin/**/*
-        key: ${{ runner.os }}-bin-${{ hashFiles('**/packages.lock.json') }}-${{hashFiles('**/*.cs')}}-${{ hashFiles('**/*.csproj')}}
+          **/obj/*
+          **/bin/*
+        key: ${{ runner.os }}-binaries-${{ hashFiles('**/packages.lock.json') }}-${{hashFiles('**/*.cs')}}-${{ hashFiles('**/*.csproj')}}
     - shell: bash
       if: steps.cache-nuget.outputs.cache-hit != 'true' && steps.cache-binaries.outputs.cache-hit != 'true'
       run: dotnet restore

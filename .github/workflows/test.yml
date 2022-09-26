@@ -22,32 +22,25 @@ jobs:
     strategy:
       matrix:
         os: [ "ubuntu-latest", "macos-latest",  "windows-latest" ]
-        framework:
-          - runtime: 'net6.0'
-            sdk: '6.0.x'
-          - runtime: 'net7.0'
-            sdk: '7.0.x'
     runs-on: ${{matrix.os}}
-    name: "Unit Tests on ${{ matrix.os }} .NET ${{ matrix.framework.sdk }}"
+    name: "Unit Tests on ${{ matrix.os }}"
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/template/prepare
       - uses: ./.github/template/build
         with:
-          runtime-version: ${{matrix.framework.runtime}}
           configuration: Debug
           no-warnings: true
       - uses: zyborg/dotnet-tests-report@v1
         if: github.ref != 'refs/heads/main'
         with:
           no_build: true
-          report_name: unit-tests-${{matrix.framework.runtime}}
-          report_title: Unit Test Results - ${{matrix.framework.runtime}}
+          report_name: unit-tests-${{matrix.os}}
+          report_title: Unit Test Results - ${{matrix.os}}
           set_check_status_from_test_outcome: true
-          extra_test_parameters: '-f ${{ matrix.framework.runtime }}'
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          gist_name: cachr-test-report-${{matrix.framework.runtime}}.md
-          gist_badge_label: 'Tests (${{matrix.framework.runtime}}): %Counters_passed%/%Counters_total%'
+          gist_name: cachr-test-report-${{matrix.os}}.md
+          gist_badge_label: 'Tests (${{matrix.os}): %Counters_passed%/%Counters_total%'
           gist_token: ${{ secrets.GIST_TOKEN }}
   test-status: # this is for PR checks only
     runs-on: ubuntu-latest
