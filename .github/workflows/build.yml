@@ -8,7 +8,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
-  build_release:
+  build-release:
     name: "Build release on ${{matrix.os}}"
     strategy:
       matrix:
@@ -23,7 +23,7 @@ jobs:
       - uses: ./.github/template/build
         with:
           configuration: "Release"
-  build_debug:
+  build-debug:
     name: "Build debug on ${{matrix.os}}"
     strategy:
       matrix:
@@ -38,19 +38,8 @@ jobs:
       - uses: ./.github/template/build
         with:
           configuration: "Debug"
-  build-and-report-warnings:
-    name: "Project Builds"
-    needs:
-      - build_release
-      - build_debug
-    runs-on: ubuntu-latest
-    steps:
-      - run: exit 0
   create-packages:
-    name: Create NuGet packages"
-    needs:
-      - build_release
-      - build_debug
+    name: Create NuGet packages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -59,3 +48,12 @@ jobs:
         with:
           configuration: "Release"
           pack: true
+  build-and-report-warnings:
+    name: "Project Builds"
+    needs:
+      - build-release
+      - build-debug
+      - create-packages
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0

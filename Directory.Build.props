@@ -1,5 +1,5 @@
 <Project>
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+  <ItemGroup>
     <InternalsVisibleTo Include="Cachr.UnitTests"/>
   </ItemGroup>
   <PropertyGroup>
@@ -30,9 +30,9 @@
     <Version Condition="'$(VersionSuffix)' != ''" >$(VersionPrefix).$(GITHUB_RUN_NUMBER)-$(VersionSuffix)</Version>
     <Version Condition="'$(VersionSuffix)' == ''" >$(VersionPrefix).$(GITHUB_RUN_NUMBER)</Version>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsPackable)$(CI)' == 'truetrue'">
+  <PropertyGroup>
     <IncludeSymbols>true</IncludeSymbols>
-    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 

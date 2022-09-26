@@ -27,17 +27,31 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: ./.github/template/generate-version
-      id: generate-version
+    - shell: bash
+      if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' # 0.1.<BUILD>-dev-SHA
+      run: |
+        echo "version-prefix=0.1" | tee -a $GITHUB_ENV
+    - shell: bash
+      if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' # 0.1.<BUILD>-dev-SHA
+      run: |
+        echo "version-suffix=dev-$GITHUB_SHA" | tee -a $GITHUB_ENV
+    - shell: bash
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+      run: |
+        echo "version-prefix=$(cat version.txt | grep -v '#' | head -n 1)" | tee -a $GITHUB_ENV
+    - shell: bash
+      if: github.ref == 'refs/heads/staging' # 1.0.<BUILD>-prerelease-timestamp
+      run: |
+        echo "version-suffix=prerelease-$(date +%Y%j%H%M%S)" | tee -a $GITHUB_ENV
     - shell: bash
       if: inputs.no-warnings == 'true'
-      run: dotnet build -c ${{inputs.configuration}} --no-restore -property:WarningLevel=0 ${{inputs.extra-args}} --version-suffix '${{ steps.generate-version.version-suffix }}' '-property:VersionPrefix=${{ steps.generate-version.version-prefix}}'
+      run: dotnet build -c ${{inputs.configuration}} --no-restore -property:WarningLevel=0 ${{inputs.extra-args}} --version-suffix '${{ env.version-suffix }}' '-property:VersionPrefix=${{ env.version-prefix}}'
     - shell: bash
       if: inputs.no-warnings != 'true'
-      run: dotnet build -c ${{inputs.configuration}} --no-restore ${{inputs.extra-args}} --version-suffix '${{ steps.generate-version.version-suffix }}' '-property:VersionPrefix=${{ steps.generate-version.version-prefix}}'
+      run: dotnet build -c ${{inputs.configuration}} --no-restore ${{inputs.extra-args}} --version-suffix '${{ env.version-suffix }}' '-property:VersionPrefix=${{ env.version-prefix}}'
     - shell: bash
       if: inputs.pack == 'true'
-      run: dotnet pack -o ./output -c ${{inputs.configuration}} --no-build ${{inputs.extra-args}} --version-suffix '${{ steps.generate-version.version-suffix }}' '-property:VersionPrefix=${{ steps.generate-version.version-prefix}}'
+      run: dotnet pack -o ./output -c ${{inputs.configuration}} --no-build ${{inputs.extra-args}} --version-suffix '${{ env.version-suffix }}' '-property:VersionPrefix=${{ env.version-prefix}}'
     - uses: actions/upload-artifact@v3
       if: inputs.pack == 'true'
       with:
