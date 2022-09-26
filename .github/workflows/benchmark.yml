@@ -14,31 +14,16 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
       - id: set-matrix
         run: |
           echo "Building matrix from files names containing the word Benchmark, and ending with .cs"
-          matrix=$(echo '{ "name": '$(ls -lr Cachr.Benchmarks/*Benchmark*.cs --format=single-column | uniq | xargs -n 1 basename -s .cs | jq -ncR '[inputs]' | cat), '"os": [ "ubuntu-latest", "macos-latest", "windows-latest" ]}')
+          matrix=$(echo '{ "name": '$(dotnet run --project Cachr.Benchmarks --no-build -c Release -- --list flat | rev | cut -d "." -f 2- | rev | uniq | jq -ncR '[inputs]' | cat), '"os": [ "ubuntu-latest", "macos-latest", "windows-latest" ]}')
           echo $matrix
           echo $matrix | jq .
           echo "::set-output name=matrix::$matrix"
-## Uncomment this for debugging the generated matrix
-#  verify-matrix:
-#    runs-on: ubuntu-latest
-#    name: "Validate generated matrix"
-#    needs:
-#      - 'generate_matrix'
-#    steps:
-#      - name: Install json2yaml
-#        run: |
-#          sudo npm install -g json2yaml
-#
-#      - name: Check matrix definition
-#        run: |
-#          matrix='${{ needs.generate_matrix.outputs.matrix }}'
-#          echo $matrix
-#          echo $matrix | jq .
-#          echo $matrix | json2yaml
 
   run:
     runs-on: ${{matrix.os}}
@@ -46,10 +31,12 @@ jobs:
       - 'generate_matrix'
     strategy:
       matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
+      fail-fast: false
     name: "Benchmark - ${{ matrix.name }} - ${{ matrix.os }}"
     steps:
-      - uses: actions/checkout@v1
-      - uses: './.github/template/benchmark'
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/benchmark
         with:
           benchmark-name: ${{ matrix.name }}-${{ matrix.os }}
           benchmark-filter: ${{ matrix.name }}
@@ -60,10 +47,11 @@ jobs:
       - 'run'
     strategy:
       max-parallel: 1
+      fail-fast: true
       matrix: ${{fromJson(needs.generate_matrix.outputs.matrix)}}
     name: "Finalize - ${{ matrix.name }} - ${{ matrix.os }}"
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         name: "Download artifacts for ${{ matrix.name }} - ${{ matrix.os }}"
         with:

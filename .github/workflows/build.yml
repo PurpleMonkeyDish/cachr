@@ -8,24 +8,52 @@ concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
-  build_release_configuration:
-    name: "Build - Configuration: ${{matrix.configuration}} - ${{matrix.os}}"
+  build-release:
+    name: "Build release on ${{matrix.os}}"
     strategy:
       matrix:
-        configuration:
-          - Release
-          - Debug
-        os: [ "ubuntu-22.04", "ubuntu-20.04", "macos-11", "macos-12", "windows-2019", "windows-2022" ]
+        os:
+          - "ubuntu-latest"
+          - "macos-latest"
+          - "windows-latest"
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-dotnet@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
         with:
-          dotnet-version: '6.0.x'
-      - uses: actions/cache@v3
+          configuration: "Release"
+  build-debug:
+    name: "Build debug on ${{matrix.os}}"
+    strategy:
+      matrix:
+        os:
+          - "ubuntu-latest"
+          - "macos-latest"
+          - "windows-latest"
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: ${{ runner.os }}-nuget-
-      - run: dotnet restore
-      - run: dotnet build --no-restore -c ${{matrix.configuration}} -property:WarningLevel=0
+          configuration: "Debug"
+  create-packages:
+    name: Create NuGet packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
+        with:
+          configuration: "Release"
+          pack: true
+  build-and-report-warnings:
+    name: "Project Builds"
+    needs:
+      - build-release
+      - build-debug
+      - create-packages
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0

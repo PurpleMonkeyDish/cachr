@@ -11,18 +11,35 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "ubuntu-20.04", "macos-11", "macos-12", "windows-2019", "windows-2022" ]
+        os: [ "ubuntu-latest", "macos-latest",  "windows-latest" ]
     runs-on: ${{matrix.os}}
     name: "Unit Tests on ${{ matrix.os }}"
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-dotnet@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
         with:
-          dotnet-version: '6.0.x'
-      - uses: actions/cache@v3
+          configuration: Debug
+          no-warnings: true
+      - uses: zyborg/dotnet-tests-report@v1
+        if: github.ref != 'refs/heads/main'
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: ${{ runner.os }}-nuget-
-      - run: dotnet test
-
+          no_build: true
+          report_name: unit-tests-${{matrix.os}}
+          report_title: Unit Test Results - ${{matrix.os}}
+          set_check_status_from_test_outcome: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gist_name: cachr-test-report-${{matrix.os}}.md
+          gist_badge_label: 'Tests (${{matrix.os}}): %Counters_passed%/%Counters_total%'
+          gist_token: ${{ secrets.GIST_TOKEN }}
+          fail_build_on_failed_tests: true
+  test-status: # this is for PR checks only
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - run: echo "" > /dev/null
+        if: success()
+      - run: exit 1
+        if: success() != true

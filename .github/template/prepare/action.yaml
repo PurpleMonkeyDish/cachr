@@ -1,0 +1,26 @@
+name: prepare
+description: "Prepares for building by installing the required .NET versions, restoring cache, and restoring NuGet packages"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: |
+          6.0.x
+        include-prerelease: true
+    - uses: actions/cache@v3
+      id: cache-nuget
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.csproj')}}
+    - uses: actions/cache@v3
+      id: cache-binaries
+      if: steps.cache-nuget.outputs.cache-hit == 'true'
+      with:
+        path: |
+          **/obj
+          **/bin
+        key: ${{ runner.os }}-build-output-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.cs') }}-${{ hashFiles('**/*.csproj')}}-${{ hashFiles('Directory.Build.props') }}-${{ hashFiles('~/.dotnet/**') }}
+    - shell: bash
+      run: dotnet restore

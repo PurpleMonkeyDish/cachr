@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <Title>Cachr Core</Title>
+    <Description>
+      This is the core Cachr library, which provides a distributed local cache, using gossip between peers.
+    </Description>
   </PropertyGroup>
 
   <ItemGroup>
