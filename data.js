@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1664150908282,
+  "lastUpdate": 1664150939403,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -334,6 +334,86 @@ window.BENCHMARK_DATA = {
             "value": 916.1752700805664,
             "unit": "ns",
             "range": "± 48.049690457087365"
+          }
+        ]
+      }
+    ],
+    "Benchmark - EndToEndBenchmarks - ubuntu-latest": [
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "26ee6f96cd80e030639dbd80ce1265f550c6b935",
+          "message": "Reduce the number of benchmarks being run (#31)",
+          "timestamp": "2022-09-25T19:59:06-04:00",
+          "tree_id": "e58cb37cb9c7ae6384cbdd17512ff8513605a2bc",
+          "url": "https://github.com/jasoncouture/cachr/commit/26ee6f96cd80e030639dbd80ce1265f550c6b935"
+        },
+        "date": 1664150938234,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.EndToEndCachePerformanceAsync",
+            "value": 2740.334192708333,
+            "unit": "ns",
+            "range": "± 102.31653355643704"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmark",
+            "value": 2634.3069953918457,
+            "unit": "ns",
+            "range": "± 4.302104982132377"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmarkAsync",
+            "value": 2727.0693969726562,
+            "unit": "ns",
+            "range": "± 88.2820418967342"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmark",
+            "value": 88.77144265174866,
+            "unit": "ns",
+            "range": "± 1.4834967824393552"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmarkAsync",
+            "value": 139.62915380795798,
+            "unit": "ns",
+            "range": "± 0.13789631790033866"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmark",
+            "value": 2605.1869366963706,
+            "unit": "ns",
+            "range": "± 69.89711717617048"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmarkAsync",
+            "value": 2959.000359853109,
+            "unit": "ns",
+            "range": "± 34.547788243424115"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveBenchmark",
+            "value": 3300.137409210205,
+            "unit": "ns",
+            "range": "± 146.65836086319004"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveAsyncBenchmark",
+            "value": 3844.6713116963706,
+            "unit": "ns",
+            "range": "± 57.9906334730348"
           }
         ]
       }
