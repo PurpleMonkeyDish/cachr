@@ -32,7 +32,8 @@ jobs:
     name: "Benchmark - ${{ matrix.name }} - ${{ matrix.os }}"
     steps:
       - uses: actions/checkout@v1
-      - uses: './.github/template/benchmark'
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/benchmark
         with:
           benchmark-name: ${{ matrix.name }}-${{ matrix.os }}
           benchmark-filter: ${{ matrix.name }}

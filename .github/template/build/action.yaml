@@ -1,0 +1,35 @@
+name: builds
+description: "Builds .NET application or solution"
+
+inputs:
+  runtime-version:
+    required: true
+    description: |
+      Set the runtime version to build.
+  no-warnings:
+    required: false
+    description: |
+      Disable build warnings
+    default: true
+  configuration:
+    required: false
+    description: |
+      Set the configuration to build, IE: debug/release
+    default: 'Release'
+  extra-args:
+    required: false
+    description: |
+      Extra command line arguments to pass to dotnet build
+    default: ''
+
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      if: inputs.no-warnings == true
+      run: dotnet build -f ${{inputs.runtime-version}} -c ${{inputs.configuration}} --no-restore -property:WarningLevel=0 ${{inputs.extra-args}}
+    - shell: bash
+      if: inputs.no-warnings != true
+      run: dotnet build -f ${{inputs.runtime-version}} -c ${{inputs.configuration}} --no-restore ${{inputs.extra-args}}
+

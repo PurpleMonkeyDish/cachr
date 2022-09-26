@@ -8,21 +8,84 @@ concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
+  create_check:
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - uses: dflydev/check-runs-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: test
+          status: in_progress
   test:
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "ubuntu-20.04", "macos-11", "macos-12", "windows-2019", "windows-2022" ]
+        os: [ "ubuntu-latest", "macos-latest",  "windows-latest" ]
+        framework:
+          - runtime: 'net6.0'
+            sdk: '6.0.x'
+            extra-args: '-property:WarningLevel=0'
+          - runtime: 'net7.0'
+            sdk: '7.0.x'
+            extra-args: '-property:WarningLevel=0'
     runs-on: ${{matrix.os}}
-    name: "Unit Tests on ${{ matrix.os }}"
+    name: "Unit Tests on ${{ matrix.os }} .NET ${{ matrix.framework.sdk }}"
     steps:
+      - uses: dflydev/check-runs-action@v1
+        if: github.ref != 'refs/heads/main'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: test
+          status: in_progress
       - uses: actions/checkout@v1
-      - uses: actions/setup-dotnet@v2
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
         with:
-          dotnet-version: '6.0.x'
-      - uses: actions/cache@v3
+          runtime-version: ${{matrix.framework.runtime}}
+          extra-args: '-property:WarningLevel=0'
+          no-warnings: false
+      - uses: zyborg/dotnet-tests-report@v1
+        if: github.ref != 'refs/heads/main'
         with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-          restore-keys: ${{ runner.os }}-nuget-
-      - run: dotnet test
+          no_build: true
+          report_name: unit-tests-${{matrix.framework.runtime}}
+          report_title: Unit Test Results - ${{matrix.framework.runtime}}
+          set_check_status_from_test_outcome: true
+          extra_test_parameters: '-f ${{ matrix.framework.runtime }}'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gist_name: cachr-test-report-${{matrix.framework.runtime}}.md
+          gist_badge_label: 'Tests (${{matrix.framework.runtime}}): %Counters_passed%/%Counters_total%'
+          gist_token: ${{ secrets.GIST_TOKEN }}
+  test-status: # this is for PR checks only
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main' && always()
+    steps:
+      - uses: dflydev/check-runs-action@v1
+        if: ${{ success() }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: test
+          conclusion: success
+          status: completed
+      - uses: dflydev/check-runs-action@v1
+        if: ${{ cancelled() }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: test
+          conclusion: cancelled
+          status: cancelled
+      - uses: dflydev/check-runs-action@v1
+        if: ${{ failure() }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: test
+          conclusion: failure
+          status: completed
+      - uses: dflydev/check-runs-action@v1
+        if: ${{always() && !failure() && !success() && !cancelled()}}}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: test
+          conclusion: failure
+          status: completed
 

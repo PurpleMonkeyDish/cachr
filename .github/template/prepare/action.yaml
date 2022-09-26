@@ -1,0 +1,30 @@
+name: prepare
+description: "Prepares for building by installing the required .NET versions, restoring cache, and restoring NuGet packages"
+
+inputs:
+  dotnet-version:
+    required: false
+    default: |
+      6.0.x
+      7.0.x
+    description: "Sets the framework versions to install"
+  restore-packages:
+    required: false
+    default: true
+    description: "Controls if we restore NuGet packages"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+        include-prerelease: true
+    - uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+        restore-keys: ${{ runner.os }}-nuget-
+    - run: dotnet restore
+      shell: bash
+      if: inputs.restore-packages

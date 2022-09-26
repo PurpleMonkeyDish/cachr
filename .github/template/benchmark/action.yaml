@@ -14,17 +14,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '6.0.x'
-    - uses: actions/cache@v3
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
-        restore-keys: ${{ runner.os }}-nuget-
-    - run: dotnet build -c Release -property:WarningLevel=0 Cachr.Benchmarks
-      shell: bash
-    - run: dotnet run -c Release --no-build --project Cachr.Benchmarks -- --job short --filter '*${{ inputs.benchmark-filter }}*' -i
+    - run: dotnet run -c Release --no-restore -property:WarningLevel=0 --project Cachr.Benchmarks -- --job short --filter '*${{ inputs.benchmark-filter }}*' -r net6.0 net7.0
       shell: bash
     - run: mv BenchmarkDotNet.Artifacts/results/*-report-full-compressed.json ./report-${{ inputs.benchmark-name }}.json
       shell: bash
