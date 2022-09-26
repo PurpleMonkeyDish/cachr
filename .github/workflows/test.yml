@@ -15,9 +15,9 @@ jobs:
       - uses: dflydev/check-runs-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          id: test
+          id: tests_pass
           status: in_progress
-          name: "Unit Tests"
+          name: "Tests Pass"
   test:
     strategy:
       matrix:
@@ -60,31 +60,31 @@ jobs:
         if: ${{ success() }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          id: test
+          id: tests_pass
           conclusion: success
           status: completed
-          name: "Unit Tests"
+          name: "Tests Pass"
       - uses: dflydev/check-runs-action@v1
         if: ${{ cancelled() }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          id: test
+          id: tests_pass
           conclusion: cancelled
           status: cancelled
-          name: "Unit Tests"
+          name: "Tests Pass"
       - uses: dflydev/check-runs-action@v1
         if: ${{ failure() }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          id: test
+          id: tests_pass
           conclusion: failure
           status: completed
-          name: "Unit Tests"
+          name: "Tests Pass"
       - uses: dflydev/check-runs-action@v1
         if: ${{always() && !failure() && !success() && !cancelled()}}}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          id: test
+          id: tests_pass
           conclusion: failure
           status: completed
-          name: "Unit Tests"
+          name: "Tests Pass"
