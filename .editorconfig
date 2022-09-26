@@ -18,6 +18,9 @@ indent_style = space # Use soft tabs (spaces) for indentation.
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+[*.txt]
+insert_final_newline = false
+trim_trailing_whitespace = false
 # JSON files
 [*.json]
 indent_size = 2
