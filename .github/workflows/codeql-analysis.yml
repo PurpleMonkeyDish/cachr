@@ -24,7 +24,7 @@ on:
 
 jobs:
   analyze:
-    name: 'Analyze - ${{matrix.framework.runtime}} sdk: ${{matrix.framework.sdk}}'
+    name: 'Analyze - ${{matrix.runtime}}'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -35,13 +35,9 @@ jobs:
       fail-fast: false
       matrix:
         language: [ 'csharp' ]
-        framework:
-          - runtime: 'net6.0'
-            sdk: '6.0.x'
-            extra-args: '-property:WarningLevel=0'
-          - runtime: 'net7.0'
-            sdk: '7.0.x'
-            extra-args: '-property:WarningLevel=0'
+        runtime:
+          - 'net6.0'
+          - 'net7.0'
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
@@ -59,8 +55,10 @@ jobs:
 
         # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
-
-    - run: dotnet build -c Release ${{matrix.framework.extra-args}} -f ${{matrix.runtime}} --no-restore
+    - uses: ./.github/template/build
+      with:
+        runtime-version: ${{matrix.runtime}}
+        configuration: "Debug"
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
