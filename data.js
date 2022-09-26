@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1664223863735,
+  "lastUpdate": 1664223881735,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -1332,6 +1332,80 @@ window.BENCHMARK_DATA = {
             "value": 1258.7805779774983,
             "unit": "ns",
             "range": "± 11.644160222417455"
+          }
+        ]
+      }
+    ],
+    "Benchmark - Cachr.Benchmarks.MeshSolverBenchmarks - macos-latest": [
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "935faa7c5576a24c70110f7284a38ec76868d4fd",
+          "message": "Add .NET 7 support (#32)",
+          "timestamp": "2022-09-26T16:17:17-04:00",
+          "tree_id": "5e51edc16c2a7cf874220b7867b1a65c3415c796",
+          "url": "https://github.com/jasoncouture/cachr/commit/935faa7c5576a24c70110f7284a38ec76868d4fd"
+        },
+        "date": 1664223880665,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 0)",
+            "value": 957.9407521883646,
+            "unit": "ns",
+            "range": "± 3.2148942352110206"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 0)",
+            "value": 1373.6734460194905,
+            "unit": "ns",
+            "range": "± 35.65531968978735"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 10)",
+            "value": 626.0075464248657,
+            "unit": "ns",
+            "range": "± 37.71858561116734"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 10)",
+            "value": 999.1434001922607,
+            "unit": "ns",
+            "range": "± 9.054378825010081"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 20)",
+            "value": 694.7167660395304,
+            "unit": "ns",
+            "range": "± 98.46146993516261"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 20)",
+            "value": 987.9314473470052,
+            "unit": "ns",
+            "range": "± 15.264467189619602"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.GetUnreachablePeersBenchmark(DisconnectedPeers: 50)",
+            "value": 756.416524887085,
+            "unit": "ns",
+            "range": "± 78.35338305628835"
+          },
+          {
+            "name": "Cachr.Benchmarks.MeshSolverBenchmarks.SolveMeshBenchmark(DisconnectedPeers: 50)",
+            "value": 1064.621956507365,
+            "unit": "ns",
+            "range": "± 12.59335834395756"
           }
         ]
       }
