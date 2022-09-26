@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1664223796029,
+  "lastUpdate": 1664223814874,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -1018,6 +1018,86 @@ window.BENCHMARK_DATA = {
             "value": 174846.85872395834,
             "unit": "ns",
             "range": "± 2779.5353760816356"
+          }
+        ]
+      }
+    ],
+    "Benchmark - Cachr.Benchmarks.EndToEndBenchmarks - ubuntu-latest": [
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "935faa7c5576a24c70110f7284a38ec76868d4fd",
+          "message": "Add .NET 7 support (#32)",
+          "timestamp": "2022-09-26T16:17:17-04:00",
+          "tree_id": "5e51edc16c2a7cf874220b7867b1a65c3415c796",
+          "url": "https://github.com/jasoncouture/cachr/commit/935faa7c5576a24c70110f7284a38ec76868d4fd"
+        },
+        "date": 1664223814039,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.EndToEndCachePerformanceAsync",
+            "value": 3926.7782552083336,
+            "unit": "ns",
+            "range": "± 686.7416690614237"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmark",
+            "value": 2253.6406211853027,
+            "unit": "ns",
+            "range": "± 113.12435234787417"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmarkAsync",
+            "value": 2290.878952026367,
+            "unit": "ns",
+            "range": "± 28.347845992"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmark",
+            "value": 73.0621596177419,
+            "unit": "ns",
+            "range": "± 0.02736153350114312"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmarkAsync",
+            "value": 103.99338030815125,
+            "unit": "ns",
+            "range": "± 0.1731702269087816"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmark",
+            "value": 2366.4170557657876,
+            "unit": "ns",
+            "range": "± 31.704996635450854"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmarkAsync",
+            "value": 2611.3511339823403,
+            "unit": "ns",
+            "range": "± 76.32417072448052"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveBenchmark",
+            "value": 2816.548094431559,
+            "unit": "ns",
+            "range": "± 87.34144100922953"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveAsyncBenchmark",
+            "value": 3186.952548980713,
+            "unit": "ns",
+            "range": "± 65.85834801497911"
           }
         ]
       }
