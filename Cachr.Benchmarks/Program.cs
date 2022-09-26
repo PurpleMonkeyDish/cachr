@@ -8,5 +8,11 @@ var configuration = ManualConfig
     .Create(DefaultConfig.Instance)
     .WithOption(ConfigOptions.JoinSummary, true)
     .WithOption(ConfigOptions.DisableLogFile, true);
-
-BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, configuration);
+try
+{
+    BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, configuration);
+}
+catch (InvalidOperationException e) when ((e.StackTrace?.Contains("Diagnosers.CompositeDiagnoser.DisplayResults") == true) &&
+                                          e.Message == "Sequence contains no elements")
+{
+}
