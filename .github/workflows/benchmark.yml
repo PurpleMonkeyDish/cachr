@@ -17,10 +17,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/template/prepare
       - uses: ./.github/template/build
+        with:
+          runtime-version: net6.0
       - id: set-matrix
         run: |
           echo "Building matrix from files names containing the word Benchmark, and ending with .cs"
-          matrix=$(echo '{ "name": '$(echo $(dotnet run --no-build -c Release -- --list flat | rev | cut -d "." -f 2- | rev | uniq | jq -ncR '[inputs]' | cat), '"os": [ "ubuntu-latest", "macos-latest", "windows-latest" ]}')
+          matrix=$(echo '{ "name": '$(dotnet run --project Cachr.Benchmarks --no-build -c Release -r net6.0 -- --list flat | rev | cut -d "." -f 2- | rev | uniq | jq -ncR '[inputs]' | cat), '"os": [ "ubuntu-latest", "macos-latest", "windows-latest" ]}')
           echo $matrix
           echo $matrix | jq .
           echo "::set-output name=matrix::$matrix"
