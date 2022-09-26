@@ -1,0 +1,28 @@
+name: "foo"
+description: ""
+outputs:
+  version-suffix:
+    description: "A version suffix to be supplied to dotnet tooling"
+    value: ""
+  version-prefix:
+    description: "The version prefix to supply to dotnet tooling"
+    value: ""
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' # 0.1.<BUILD>-dev-SHA
+      run: |
+        echo "set-output name=version-suffix::dev-$GITHUB_SHA"
+        echo "set-output name=version-prefix::0.1"
+    - shell: bash
+      if: github.ref == 'refs/heads/staging' # 1.0.<BUILD>-prerelease-timestamp
+      run: |
+        echo "set-output name=version-suffix::prerelease-$(date +%Y%j%H%M%S)"
+        echo "set-output name=version-prefix::$(cat version.txt | grep -v '#' | head -n 1)"
+    - shell: bash
+      if: github.ref == 'refs/heads/main' # 1.0.<BUILD>
+      run: |
+        echo "set-output name=version-suffix::"
+        echo "set-output name=version-prefix::$(cat version.txt | grep -v '#' | head -n 1)"

@@ -1,12 +1,42 @@
 <Project>
-  <ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
     <InternalsVisibleTo Include="Cachr.UnitTests"/>
   </ItemGroup>
   <PropertyGroup>
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <TargetFramework>net6.0</TargetFramework>
+    <VersionPrefix>0.1</VersionPrefix>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/jasoncouture/cachr</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jasoncouture/cachr.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryCommit>$(GITHUB_SHA)</RepositoryCommit>
+    <RepositoryBranch Condition="'$(GITHUB_REF_TYPE)' == 'branch'" >$(GITHUB_REF)</RepositoryBranch>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="..\LICENSE" Pack="true" PackagePath="" />
+    <None Include="..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <Version Condition="'$(VersionSuffix)' != ''" >$(VersionPrefix).$(GITHUB_RUN_NUMBER)-$(VersionSuffix)</Version>
+    <Version Condition="'$(VersionSuffix)' == ''" >$(VersionPrefix).$(GITHUB_RUN_NUMBER)</Version>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsPackable)$(CI)' == 'truetrue'">
+    <IncludeSymbols>true</IncludeSymbols>
+    <DebugType>pdbonly</DebugType>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Jason Couture</Authors>
   </PropertyGroup>
 </Project>

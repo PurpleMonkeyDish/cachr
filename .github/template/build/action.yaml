@@ -17,15 +17,32 @@ inputs:
     description: |
       Extra command line arguments to pass to dotnet build
     default: ''
+  pack:
+    required: false
+    description: |
+      Packs all available NuGet packages
+    default: 'false'
 
 
 runs:
   using: "composite"
   steps:
+    - uses: ./.github/template/generate-version
+      id: generate-version
     - shell: bash
       if: inputs.no-warnings == 'true'
-      run: dotnet build -c ${{inputs.configuration}} --no-restore -property:WarningLevel=0 ${{inputs.extra-args}}
+      run: dotnet build -c ${{inputs.configuration}} --no-restore -property:WarningLevel=0 ${{inputs.extra-args}} --version-suffix '${{ steps.generate-version.version-suffix }}' '-property:VersionPrefix=${{ steps.generate-version.version-prefix}}'
     - shell: bash
       if: inputs.no-warnings != 'true'
-      run: dotnet build -c ${{inputs.configuration}} --no-restore ${{inputs.extra-args}}
-
+      run: dotnet build -c ${{inputs.configuration}} --no-restore ${{inputs.extra-args}} --version-suffix '${{ steps.generate-version.version-suffix }}' '-property:VersionPrefix=${{ steps.generate-version.version-prefix}}'
+    - shell: bash
+      if: inputs.pack == 'true'
+      run: dotnet pack -o ./output -c ${{inputs.configuration}} --no-build ${{inputs.extra-args}} --version-suffix '${{ steps.generate-version.version-suffix }}' '-property:VersionPrefix=${{ steps.generate-version.version-prefix}}'
+    - uses: actions/upload-artifact@v3
+      if: inputs.pack == 'true'
+      with:
+        name: nuget-packages-${{inputs.configuration}}
+        path: ./output
+    - shell: bash
+      if: inputs.pack == 'true'
+      run: rm -rfv ./output

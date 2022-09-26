@@ -46,3 +46,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: exit 0
+  create-packages:
+    name: Create NuGet packages"
+    needs:
+      - build_release
+      - build_debug
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/template/prepare
+      - uses: ./.github/template/build
+        with:
+          configuration: "Release"
+          pack: true
