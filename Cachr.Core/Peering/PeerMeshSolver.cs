@@ -6,7 +6,6 @@ namespace Cachr.Core.Peering;
 
 public sealed class PeerMeshSolver : IPeerMeshSolver
 {
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public IEnumerable<Guid> SelectLocalPeers(IDictionary<Guid, PeerStateInformation> peerMap)
     {
         var unreachablePeers = GetUnreachablePeers(peerMap);
@@ -23,8 +22,6 @@ public sealed class PeerMeshSolver : IPeerMeshSolver
     }
 
     private static int GetDeterministicOrderValue(Guid id) => HashCode.Combine(id, NodeIdentity.Id);
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public ISet<Guid> GetUnreachablePeers(IDictionary<Guid, PeerStateInformation> peerMap)
     {
         var unreachablePeers = new HashSet<Guid>(peerMap.Count);

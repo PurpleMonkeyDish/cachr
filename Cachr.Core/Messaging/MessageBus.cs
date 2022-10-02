@@ -120,8 +120,6 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         {
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static async Task ForEachSubscriberAsync(IEnumerable<ISubscriber<T>> subscriptionTokens,
         Func<ISubscriber<T>, T, ValueTask<bool>> callback, T state, bool completeMessage = true)
     {
@@ -144,8 +142,6 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
             CompleteMessage(state);
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static void CompleteMessage(T? message)
     {
         switch (message)
@@ -159,8 +155,6 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
         DisposeMessage(message);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static void DisposeMessage(T message)
     {
         switch (message)
@@ -170,8 +164,6 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                 break;
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private async Task RandomTargetMessageProcessor()
     {
         await Task.Yield();
@@ -216,12 +208,8 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         Interlocked.Exchange(ref _broadcastSubscriptionCache, null);
         Interlocked.Exchange(ref _targetedSubscriptionCache, null);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private IEnumerable<ISubscriber<T>> GetCachedAliveSubscriptions(SubscriptionMode mode) =>
         EnumerateSubscriptions(_weakReferenceCache ??= _subscriptions.Values.ToArray(), mode);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private IEnumerable<ISubscriber<T>> GetSubscriptionTokens(SubscriptionMode mode)
     {
         // Not a valid mode.
@@ -234,12 +222,8 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
             _ => Enumerable.Empty<ISubscriber<T>>()
         };
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private IEnumerable<ISubscriber<T>> GetFromOrRebuildCache(ref IEnumerable<ISubscriber<T>>? cache, SubscriptionMode mode) =>
         cache ??= GetCachedAliveSubscriptions(mode);
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private IEnumerable<ISubscriber<T>> EnumerateSubscriptions(WeakReference[] weakReferences,
         SubscriptionMode mode = SubscriptionMode.All)
     {
