@@ -73,6 +73,29 @@ indent_style = space
 [*.cs]
 indent_size = 4
 indent_style = space # Use soft tabs (spaces) for indentation.
+csharp_wrap_arguments_style = chop_always
+wrap_property_pattern = chop_always
+csharp_wrap_parameters_style = chop_always
+csharp_wrap_before_invocation_lpar = true
+csharp_wrap_after_invocation_lpar = true
+csharp_wrap_before_invocation_rpar = true
+csharp_wrap_after_declaration_lpar = true
+csharp_wrap_before_declaration_lpar = true
+csharp_wrap_before_declaration_rpar = true
+csharp_place_constructor_initializer_on_same_line = false
+csharp_keep_existing_invocation_parens_arrangement = true
+
+resharper_csharp_wrap_arguments_style = chop_always
+resharper_csharp_wrap_parameters_style = chop_always
+resharper_wrap_property_pattern = chop_always
+resharper_csharp_wrap_before_invocation_lpar = true
+resharper_csharp_wrap_after_invocation_lpar = true
+resharper_csharp_wrap_before_invocation_rpar = true
+resharper_csharp_wrap_after_declaration_lpar = true
+resharper_csharp_wrap_before_declaration_lpar = true
+resharper_csharp_wrap_before_declaration_rpar = true
+resharper_csharp_place_constructor_initializer_on_same_line = false
+resharper_csharp_keep_existing_invocation_parens_arrangement = true
 
 # IDE0055: Fix formatting
 dotnet_diagnostic.IDE0055.severity = warning
