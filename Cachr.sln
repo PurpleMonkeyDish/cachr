@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.AspNetCore", "Cachr.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cachr.AspNetCore.TestApi", "Cachr.AspNetCore.TestApi\Cachr.AspNetCore.TestApi.csproj", "{6BD368F9-55C1-4F30-B3E0-390D61B7C9BE}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SharedInternalCode", "SharedInternalCode\SharedInternalCode.shproj", "{949887E4-841B-41DF-A389-86D05044AE0A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

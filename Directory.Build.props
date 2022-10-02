@@ -1,6 +1,7 @@
 <Project>
   <ItemGroup>
-    <InternalsVisibleTo Include="Cachr.UnitTests"/>
+    <InternalsVisibleTo Include="Cachr.UnitTests" />
+    <InternalsVisibleTo Include="Cachr.Benchmarks" />
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>

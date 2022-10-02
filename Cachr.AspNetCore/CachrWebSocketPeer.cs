@@ -1,161 +1,144 @@
-using System.Diagnostics;
-using System.IO.Compression;
+using System.Buffers;
 using System.Net.WebSockets;
-using System.Text.Json;
+using Cachr.Core;
 using Cachr.Core.Buffers;
-using Cachr.Core.Messages.Duplication;
-using Cachr.Core.Messaging;
+using Cachr.Core.Peering;
+using Microsoft.Extensions.Logging;
 
 namespace Cachr.AspNetCore;
 
-public sealed class CachrWebSocketPeer : IAsyncDisposable
+public sealed class CachrWebSocketPeer : IPeerConnection, IDisposable
 {
-    private readonly Guid _id;
+    private const int OneKilobyte = 1024;
+    private const int OneMegabyte = OneKilobyte * 1024;
+    private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
     private readonly WebSocket _webSocket;
-    private readonly IMessageBus<PeerReceivedMessageData> _peerDataReceivedMessageBus;
-    private readonly IMessageBus<PeerMessageData> _peerDataMessageBus;
+    private readonly ILogger _logger;
+    private static readonly ArrayPool<byte> s_clientSocketPool = ArrayPool<byte>.Create(OneMegabyte, 32);
+    public Guid Id { get; }
+    public bool Enabled { get; set; }
+    public Uri Uri { get; }
 
-    private readonly IDuplicateTracker<Guid> _duplicateTracker =
-        new DuplicateTracker<Guid>(32, 10000, TimeSpan.FromMinutes(2));
-
-
-    public CachrWebSocketPeer(Guid id, WebSocket webSocket, IMessageBus<PeerMessageData> peerDataMessageBus,
-        IMessageBus<PeerReceivedMessageData> peerDataReceivedMessageBus)
+    public CachrWebSocketPeer(
+        Guid id,
+        Uri uri,
+        WebSocket webSocket,
+        ILoggerFactory loggerFactory
+    )
     {
-        _id = id;
+        Id = id;
+        Uri = uri;
         _webSocket = webSocket;
-        _peerDataReceivedMessageBus = peerDataReceivedMessageBus;
-        _peerDataMessageBus = peerDataMessageBus;
+        _logger = loggerFactory.CreateLogger(string.Join(".", typeof(CachrWebSocketPeer).FullName, Id.ToString("n")));
     }
 
     public async Task RunPeerAsync(CancellationToken cancellationToken)
     {
-        using var source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var targetedSubscriptionToken =
-            _peerDataMessageBus.Subscribe(m => OnTargetedMessageReceived(m, cancellationToken), SubscriptionMode.All);
-        await using var _ = targetedSubscriptionToken.ConfigureAwait(false);
-        await HandleReadsAsync(cancellationToken).ConfigureAwait(false);
-        source.Cancel();
-    }
-
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-
-    private async ValueTask OnTargetedMessageReceived(PeerMessageData message, CancellationToken cancellationToken)
-    {
-        if (message.TargetId is not null && message.TargetId != _id) return; // Ignored targeted not aimed at us.
-        if (_duplicateTracker.IsDuplicate(message.Id)) return; // Drop duplicates.
-        await OnMessageReceived(message, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async ValueTask OnMessageReceived(PeerMessageData message, CancellationToken cancellationToken)
-    {
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        const int InitialBufferSize = 4096;
+        var receivedBytes = 0;
+        var buffer = RentedArray<byte>.FromPool(InitialBufferSize, s_clientSocketPool);
         try
         {
-            if (_webSocket.CloseStatus != null) return;
-            using var serializedMessage = SerializeMessage(message);
-            await _webSocket.SendAsync(
-                serializedMessage.ArraySegment,
-                WebSocketMessageType.Binary,
-                true,
-                cancellationToken
-            ).ConfigureAwait(false);
+            while (_webSocket.CloseStatus == null)
+            {
+                var receiveResult =
+                    await _webSocket.ReceiveAsync(buffer.ArraySegment[receivedBytes..], cancellationToken);
+
+                if (receiveResult.CloseStatus != null)
+                {
+                    break;
+                }
+
+                receivedBytes += receiveResult.Count;
+
+                if (!receiveResult.EndOfMessage)
+                {
+                    if (receivedBytes >= buffer.Length - 1536)
+                    {
+                        buffer.Resize(buffer.Length * 2);
+                    }
+
+                    continue;
+                }
+
+                if (!Enabled)
+                {
+                    receivedBytes = 0;
+                    continue;
+                }
+
+                var resultBuffer = RentedArray<byte>.FromDefaultPool(receivedBytes);
+                buffer.ArraySegment[..receivedBytes].CopyTo(resultBuffer.ArraySegment);
+                buffer.Dispose();
+                buffer = RentedArray<byte>.FromPool(InitialBufferSize, s_clientSocketPool);
+            }
+
+            var source = new CancellationTokenSource();
+            _logger.LogInformation("Web socket communication ended by peer.");
+            source.CancelAfter(TimeSpan.FromSeconds(5));
+            if (_webSocket.CloseStatus != null)
+            {
+                await _webSocket.CloseAsync(_webSocket.CloseStatus.Value,
+                    _webSocket.CloseStatusDescription,
+                    source.Token);
+            }
+            else
+            {
+                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure,
+                    nameof(WebSocketCloseStatus.NormalClosure),
+                    source.Token);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "An exception occurred while reading data from our peer. The web socket will now be closed.");
         }
         finally
         {
-            _semaphore.Release();
-        }
-    }
-
-    private RentedArray<byte> SerializeMessage<T>(T objectToSerialize)
-    {
-        using var memoryStream = new MemoryStream();
-        using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Decompress, leaveOpen: true))
-        {
-            JsonSerializer.Serialize(gzipStream, objectToSerialize);
-            gzipStream.Flush();
-        }
-
-        var rentedArray =
-            RentedArray<byte>.FromDefaultPool((int)memoryStream.Length + ArraySegmentExtensions.GzipSentinel.Length);
-        using var rentedArrayStream = rentedArray.ToMemoryStream(writable: true);
-        rentedArrayStream.Write(ArraySegmentExtensions.GzipSentinel);
-        memoryStream.Seek(0, SeekOrigin.Begin);
-
-        memoryStream.CopyTo(rentedArrayStream);
-
-        return rentedArray;
-    }
-
-    private async Task HandleReadsAsync(CancellationToken cancellationToken)
-    {
-        RentedArray<byte>? messageBuffer = null;
-        WebSocketReceiveResult? receiveResult = null;
-        while (receiveResult?.CloseStatus == null)
-        {
-            using var localBuffer = RentedArray<byte>.FromDefaultPool(4096);
-            receiveResult = await _webSocket.ReceiveAsync(localBuffer.ArraySegment, cancellationToken).ConfigureAwait(false);
-
-            if (receiveResult.CloseStatus != null) continue;
-
-            var previousBuffer = messageBuffer ?? RentedArray<byte>.Empty;
-
-            messageBuffer = RentedArray<byte>.FromDefaultPool(receiveResult.Count + previousBuffer.Length);
-            if (previousBuffer.Length > 0)
+            if (_webSocket.State != WebSocketState.Closed)
             {
-                previousBuffer.ArraySegment.CopyTo(messageBuffer.ArraySegment);
+                _logger.LogWarning(
+                    "WebSocket loop ended, but the connection was left open. The connection will be aborted.");
             }
 
-            localBuffer.ArraySegment[..receiveResult.Count]
-                .CopyTo(messageBuffer.ArraySegment[previousBuffer.Length..receiveResult.Count]);
-
-            previousBuffer.Dispose();
-
-            if (!receiveResult.EndOfMessage)
-                continue;
-
-            previousBuffer = messageBuffer;
-            await TryDecodeAndPublishMessage(previousBuffer, cancellationToken).ConfigureAwait(false);
-            messageBuffer = null;
+            buffer.Dispose();
         }
-
-        await _webSocket.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription,
-            cancellationToken).ConfigureAwait(false);
     }
 
-    private static T? DeserializePayload<T>(RentedArray<byte> rentedArray, bool disposeWhenDone = true)
-        where T : class
+
+    public async ValueTask SendAsync(RentedArray<byte> peerMessageData, CancellationToken cancellationToken)
     {
-        using (disposeWhenDone ? rentedArray : null)
+        try
         {
-            var arraySegment = rentedArray.ArraySegment;
-            Debug.Assert(arraySegment.Array is not null);
-            using var stream = arraySegment.DetectAndWrapWithDecompressionStream();
-
-            var result = JsonSerializer.Deserialize<T>(stream);
-
-            return result;
+            using var _ = await _sendSemaphore.AcquireAsync(cancellationToken);
+            await _webSocket.SendAsync(peerMessageData.ReadOnlyMemory,
+                WebSocketMessageType.Binary,
+                true,
+                cancellationToken);
+        }
+        catch (ObjectDisposedException) { }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "An unexpected exception occurred when writing data.");
+            if (_webSocket.CloseStatus != null) return;
+            await _webSocket.CloseAsync(
+                WebSocketCloseStatus.InternalServerError,
+                "Internal server error during send",
+                cancellationToken
+            ).IgnoreExceptions();
         }
     }
 
-
-    private async ValueTask TryDecodeAndPublishMessage(RentedArray<byte> buffer, CancellationToken cancellationToken)
+    public ValueTask CloseAsync()
     {
-        using var peerMessage = DeserializePayload<PeerReceivedMessageData>(buffer);
-
-        if (peerMessage is null) // What?
-            return;
-        if (_duplicateTracker.IsDuplicate(peerMessage.Id))
-            return;
-
-        await _peerDataReceivedMessageBus.BroadcastAsync(peerMessage, cancellationToken).ConfigureAwait(false);
-
-        await peerMessage; // Wait for the message to be handled.
+        throw new NotImplementedException();
     }
 
-    public ValueTask DisposeAsync()
+    public void Dispose()
     {
+        _sendSemaphore.Dispose();
         _webSocket.Dispose();
-        return ValueTask.CompletedTask;
     }
 }

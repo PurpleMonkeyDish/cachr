@@ -6,37 +6,39 @@ namespace Cachr.Core.Buffers;
 [JsonConverter(typeof(RentedArrayJsonConverterFactory))]
 public sealed class RentedArray<T> : IDisposable
 {
-    private readonly ReadOnlyMemory<T> _data;
-    private readonly ArrayPool<T>? _pool;
-    private readonly ArraySegment<T> _segment;
+    private ReadOnlyMemory<T> _data;
+    private ArrayPool<T>? _pool;
+    private ArraySegment<T> _segment;
     private T[]? _dataArray;
-    private readonly bool _disposable;
+    private bool _disposable;
 
-    private RentedArray(T[] data, ArrayPool<T>? pool, int size, bool disposable = true)
+    private RentedArray(T[] data, ArrayPool<T>? pool, int size)
     {
+        SetInternalVariables(data, pool, size);
+    }
+
+    private void SetInternalVariables(T[] data, ArrayPool<T>? pool, int size)
+    {
+        _pool = pool;
+        _disposable = size > 0 && pool != null;
+        _dataArray = data;
         if (size == 0)
         {
             _segment = ArraySegment<T>.Empty;
-            _pool = null;
-            _data = _dataArray = Array.Empty<T>();
+            _data = ReadOnlyMemory<T>.Empty;
         }
         else
         {
-            _data = _segment = new ArraySegment<T>(_dataArray = data, 0, size);
-            _pool = pool;
+            _segment = new ArraySegment<T>(_dataArray = data, 0, size);
+            _data = new ReadOnlyMemory<T>(_dataArray, 0, size);
         }
-
-        _disposable = disposable;
     }
 
     public bool IsPooled
     {
         get
         {
-            if (_dataArray is null)
-            {
-                throw new ObjectDisposedException(nameof(RentedArray<T>));
-            }
+            ThrowIfDisposed();
 
             return _pool is not null;
         }
@@ -47,10 +49,7 @@ public sealed class RentedArray<T> : IDisposable
         get
         {
             var data = _data;
-            if (_dataArray is null)
-            {
-                throw new ObjectDisposedException(nameof(RentedArray<T>));
-            }
+            ThrowIfDisposed();
 
             return data;
         }
@@ -58,21 +57,23 @@ public sealed class RentedArray<T> : IDisposable
 
     public int Length => ArraySegment.Count;
 
+    private void ThrowIfDisposed()
+    {
+        if (_dataArray is null) throw new ObjectDisposedException(nameof(RentedArray<T>));
+    }
+
     public ArraySegment<T> ArraySegment
     {
         get
         {
             var data = _segment;
-            if (_dataArray is null)
-            {
-                throw new ObjectDisposedException(nameof(RentedArray<T>));
-            }
+            ThrowIfDisposed();
 
             return data;
         }
     }
 
-    public static RentedArray<T> Empty { get; } = new RentedArray<T>(Array.Empty<T>(), null, 0, false);
+    public static RentedArray<T> Empty { get; } = new RentedArray<T>(Array.Empty<T>(), null, 0);
 
 
     public void Dispose()
@@ -87,14 +88,15 @@ public sealed class RentedArray<T> : IDisposable
         _dataArray = null;
     }
 
-    public static RentedArray<T> FromPool(int minimumSize, ArrayPool<T>? pool)
+    public static RentedArray<T> FromPool(int minimumSize, ArrayPool<T>? pool, bool forBuffer = false)
     {
-        return new RentedArray<T>(pool?.Rent(minimumSize) ?? new T[minimumSize], pool, minimumSize);
+        var allocatedArray = pool?.Rent(minimumSize) ?? new T[minimumSize];
+        return new RentedArray<T>(allocatedArray, pool, forBuffer ? allocatedArray.Length : minimumSize);
     }
 
-    public static RentedArray<T> FromDefaultPool(int minimumSize)
+    public static RentedArray<T> FromDefaultPool(int minimumSize, bool forBuffer = false)
     {
-        return FromPool(minimumSize, ArrayPool<T>.Shared);
+        return FromPool(minimumSize, ArrayPool<T>.Shared, forBuffer);
     }
 
 
@@ -111,5 +113,36 @@ public sealed class RentedArray<T> : IDisposable
     public override string ToString()
     {
         return $"RentedArray: Pooled: {IsPooled}, Length: {ArraySegment.Count}, {string.Join(", ", ArraySegment)}";
+    }
+
+    public RentedArray<T> Clone()
+    {
+        var newArray = FromPool(this.Length, _pool);
+        ArraySegment.CopyTo(newArray.ArraySegment);
+        return newArray;
+    }
+
+    public void Resize(int size)
+    {
+        ThrowIfDisposed();
+        if (size < 0) throw new ArgumentOutOfRangeException(nameof(size), "Size must be greater than or equal to zero");
+        // Resizing to the same size is a no-op.
+        if (size == _dataArray!.Length) return;
+
+        // Allocate a new buffer of size, when our internal buffer isn't enough.
+        if (size > _dataArray!.Length)
+        {
+            var next = _pool?.Rent(size) ?? new T[size];
+            var countToCopy = Length > size ? size : Length;
+            ArraySegment[..countToCopy].CopyTo(next);
+            _pool?.Return(_dataArray!);
+            SetInternalVariables(next, _pool, size);
+            return;
+        }
+
+
+        // When size is 0, or less than our buffer, rather than re-allocate
+        // We can just set our size, and setup our segment and read only memory.
+        SetInternalVariables(_dataArray!, _pool, size);
     }
 }

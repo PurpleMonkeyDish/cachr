@@ -1,8 +1,6 @@
-﻿using System.Buffers;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Cachr.Core;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 
 namespace Cachr.AspNetCore;
 

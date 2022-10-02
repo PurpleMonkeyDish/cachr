@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Cachr.Core\Cachr.Core.csproj" />
+    <ProjectReference Include="..\Cachr.Core\Cachr.Core.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App"/>
   </ItemGroup>
 
   <PropertyGroup>
@@ -13,5 +13,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
+
+  <Import Project="..\SharedInternalCode\SharedInternalCode.projitems" Label="Shared"/>
 
 </Project>
