@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Microsoft.Extensions.Options;
 
@@ -14,11 +13,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
     private readonly Channel<T> _randomTargetChannel;
 
-    private readonly ConcurrentDictionary<Guid, WeakReference> _subscriptions =
-        new(
-            8,
-            0
-        );
+    private readonly ConcurrentDictionary<Guid, WeakReference> _subscriptions = new(8, 0);
 
     private IEnumerable<ISubscriber<T>>? _subscriptionCache;
     private WeakReference[]? _weakReferenceCache;
@@ -49,19 +44,14 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
     public async Task BroadcastAsync(T message, CancellationToken cancellationToken)
     {
-        await _broadcastMessages.Writer.WriteAsync(
-                message,
-                cancellationToken
-            )
+        await _broadcastMessages.Writer.WriteAsync(message, cancellationToken)
             .ConfigureAwait(false);
     }
 
     public async Task SendToRandomAsync(T message, CancellationToken cancellationToken)
     {
-        await _randomTargetChannel.Writer.WriteAsync(
-            message,
-            cancellationToken
-        ).ConfigureAwait(false);
+        await _randomTargetChannel.Writer.WriteAsync(message, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public ISubscriptionToken Subscribe(ISubscriber<T> subscriber)
@@ -120,8 +110,11 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         {
         }
     }
+
     private static async Task ForEachSubscriberAsync(IEnumerable<ISubscriber<T>> subscriptionTokens,
-        Func<ISubscriber<T>, T, ValueTask<bool>> callback, T state, bool completeMessage = true)
+        Func<ISubscriber<T>, T, ValueTask<bool>> callback,
+        T state,
+        bool completeMessage = true)
     {
         var subscriptionTasks = subscriptionTokens
             // AsParallel is used to avoid synchronous tasks from clogging things up.
@@ -134,7 +127,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
         foreach (var valueTask in subscriptionTasks)
         {
-            await valueTask;
+            await valueTask.IgnoreExceptions();
         }
 
         if (completeMessage)
@@ -142,6 +135,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
             CompleteMessage(state);
         }
     }
+
     private static void CompleteMessage(T? message)
     {
         switch (message)
@@ -155,6 +149,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
 
         DisposeMessage(message);
     }
+
     private static void DisposeMessage(T message)
     {
         switch (message)
@@ -164,6 +159,7 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
                 break;
         }
     }
+
     private async Task RandomTargetMessageProcessor()
     {
         await Task.Yield();
@@ -208,8 +204,10 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
         Interlocked.Exchange(ref _broadcastSubscriptionCache, null);
         Interlocked.Exchange(ref _targetedSubscriptionCache, null);
     }
+
     private IEnumerable<ISubscriber<T>> GetCachedAliveSubscriptions(SubscriptionMode mode) =>
         EnumerateSubscriptions(_weakReferenceCache ??= _subscriptions.Values.ToArray(), mode);
+
     private IEnumerable<ISubscriber<T>> GetSubscriptionTokens(SubscriptionMode mode)
     {
         // Not a valid mode.
@@ -222,8 +220,11 @@ public sealed class MessageBus<T> : IMessageBus<T>, IDisposable
             _ => Enumerable.Empty<ISubscriber<T>>()
         };
     }
-    private IEnumerable<ISubscriber<T>> GetFromOrRebuildCache(ref IEnumerable<ISubscriber<T>>? cache, SubscriptionMode mode) =>
+
+    private IEnumerable<ISubscriber<T>> GetFromOrRebuildCache(ref IEnumerable<ISubscriber<T>>? cache,
+        SubscriptionMode mode) =>
         cache ??= GetCachedAliveSubscriptions(mode);
+
     private IEnumerable<ISubscriber<T>> EnumerateSubscriptions(WeakReference[] weakReferences,
         SubscriptionMode mode = SubscriptionMode.All)
     {

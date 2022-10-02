@@ -14,5 +14,5 @@
   <ItemGroup>
     <ProjectReference Include="..\Cachr.Core\Cachr.Core.csproj" />
   </ItemGroup>
-
+  <Import Project="..\SharedInternalCode\SharedInternalCode.projitems" Label="Shared" />
 </Project>

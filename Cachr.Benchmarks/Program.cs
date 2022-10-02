@@ -2,7 +2,6 @@
 
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
-using Cachr.Benchmarks;
 
 var configuration = ManualConfig
     .Create(DefaultConfig.Instance)
