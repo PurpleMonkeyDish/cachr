@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1664746309070,
+  "lastUpdate": 1664746328169,
   "repoUrl": "https://github.com/jasoncouture/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -2042,6 +2042,42 @@ window.BENCHMARK_DATA = {
             "value": 1040.2711987304688,
             "unit": "ns",
             "range": "± 257.9484899724139"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5f6e2e12b5a8aff3a7aa7d02af4f7f4bd1d2f8bb",
+          "message": "Another peering redesign (#33)",
+          "timestamp": "2022-10-02T17:24:44-04:00",
+          "tree_id": "b8bee1761a12acbcfe2319a30e09532857ec698a",
+          "url": "https://github.com/jasoncouture/cachr/commit/5f6e2e12b5a8aff3a7aa7d02af4f7f4bd1d2f8bb"
+        },
+        "date": 1664746327351,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.BroadcastAsyncBenchmark",
+            "value": 18097.09415364583,
+            "unit": "ns",
+            "range": "± 2037.3232203495475"
+          },
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.SendToAsyncBenchmark",
+            "value": 942.430517578125,
+            "unit": "ns",
+            "range": "± 13.325857575756288"
           }
         ]
       }
