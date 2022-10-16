@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1665962252276,
+  "lastUpdate": 1665962262881,
   "repoUrl": "https://github.com/PurpleMonkeyDish/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -1844,6 +1844,84 @@ window.BENCHMARK_DATA = {
             "value": 2680.6579043070474,
             "unit": "ns",
             "range": "± 34.275179859585904"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "distinct": true,
+          "id": "9c81bb29170098db0fb75e12ef35900c17429dbb",
+          "message": "Updated packages.lock.json",
+          "timestamp": "2022-10-16T19:08:22-04:00",
+          "tree_id": "8d671aa81222dfe57cffe3f893fe3693f80cefcc",
+          "url": "https://github.com/PurpleMonkeyDish/cachr/commit/9c81bb29170098db0fb75e12ef35900c17429dbb"
+        },
+        "date": 1665962262373,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.EndToEndCachePerformanceAsync",
+            "value": 1377.9993888346355,
+            "unit": "ns",
+            "range": "± 29.18344749699995"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmark",
+            "value": 1328.474500020345,
+            "unit": "ns",
+            "range": "± 27.771111445223028"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheSetBenchmarkAsync",
+            "value": 1568.5864334106445,
+            "unit": "ns",
+            "range": "± 72.26852322218988"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmark",
+            "value": 73.29997702439626,
+            "unit": "ns",
+            "range": "± 0.08304182819085355"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheGetBenchmarkAsync",
+            "value": 103.96492997805278,
+            "unit": "ns",
+            "range": "± 0.6370190871273592"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmark",
+            "value": 1386.1844526926677,
+            "unit": "ns",
+            "range": "± 13.278409633068662"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRefreshBenchmarkAsync",
+            "value": 1652.1228682200115,
+            "unit": "ns",
+            "range": "± 63.62267439162831"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveBenchmark",
+            "value": 2035.6799430847168,
+            "unit": "ns",
+            "range": "± 47.52072776185791"
+          },
+          {
+            "name": "Cachr.Benchmarks.EndToEndBenchmarks.CacheRemoveAsyncBenchmark",
+            "value": 2394.317222595215,
+            "unit": "ns",
+            "range": "± 40.06087119896294"
           }
         ]
       }
