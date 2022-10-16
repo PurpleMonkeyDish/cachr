@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1665962287083,
+  "lastUpdate": 1665962299153,
   "repoUrl": "https://github.com/PurpleMonkeyDish/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -2564,6 +2564,42 @@ window.BENCHMARK_DATA = {
             "value": 942.430517578125,
             "unit": "ns",
             "range": "± 13.325857575756288"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "distinct": true,
+          "id": "9c81bb29170098db0fb75e12ef35900c17429dbb",
+          "message": "Updated packages.lock.json",
+          "timestamp": "2022-10-16T19:08:22-04:00",
+          "tree_id": "8d671aa81222dfe57cffe3f893fe3693f80cefcc",
+          "url": "https://github.com/PurpleMonkeyDish/cachr/commit/9c81bb29170098db0fb75e12ef35900c17429dbb"
+        },
+        "date": 1665962298696,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.BroadcastAsyncBenchmark",
+            "value": 17654.331028645833,
+            "unit": "ns",
+            "range": "± 682.0758733276306"
+          },
+          {
+            "name": "Cachr.Benchmarks.MessageBusIterationBenchmarks.SendToAsyncBenchmark",
+            "value": 880.3294217936199,
+            "unit": "ns",
+            "range": "± 5.576982801363373"
           }
         ]
       }
