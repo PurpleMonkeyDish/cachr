@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Collections.Immutable;
 using System.Net.WebSockets;
 using Cachr.Core;
 using Cachr.Core.Buffers;
@@ -12,82 +13,78 @@ public sealed class CachrWebSocketPeer : IPeerConnection, IDisposable
     private const int OneKilobyte = 1024;
     private const int OneMegabyte = OneKilobyte * 1024;
     private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
-    private readonly WebSocket _webSocket;
+    private WebSocket? _webSocket;
     private readonly ILogger _logger;
     private static readonly ArrayPool<byte> s_clientSocketPool = ArrayPool<byte>.Create(OneMegabyte, 32);
-    public Guid Id { get; }
+    public PeerDescription Description { get; }
     public bool Enabled { get; set; }
-    public Uri Uri { get; }
 
     public CachrWebSocketPeer(
         Guid id,
-        Uri uri,
+        Uri[] uris,
         WebSocket webSocket,
         ILoggerFactory loggerFactory
     )
     {
-        Id = id;
-        Uri = uri;
+        Description = new PeerDescription(id, uris);
         _webSocket = webSocket;
-        _logger = loggerFactory.CreateLogger(string.Join(".", typeof(CachrWebSocketPeer).FullName, Id.ToString("n")));
+        _logger = loggerFactory.CreateLogger(string.Join(".", typeof(CachrWebSocketPeer).FullName, Description.Id.ToString("n")));
     }
 
     public async Task RunPeerAsync(CancellationToken cancellationToken)
     {
-        const int InitialBufferSize = 4096;
+        _logger.LogInformation("Web socket receive loop started");
+        const int InitialBufferSize = OneKilobyte * 4;
         var receivedBytes = 0;
-        var buffer = RentedArray<byte>.FromPool(InitialBufferSize, s_clientSocketPool);
+        using var buffer = RentedArray<byte>.FromPool(InitialBufferSize, s_clientSocketPool, forBuffer: true);
+        var webSocket = _webSocket ?? throw new ObjectDisposedException(nameof(CachrWebSocketPeer));
         try
         {
-            while (_webSocket.CloseStatus == null)
+            while (webSocket.CloseStatus == null)
             {
                 var receiveResult =
-                    await _webSocket.ReceiveAsync(buffer.ArraySegment[receivedBytes..], cancellationToken);
-
-                if (receiveResult.CloseStatus != null)
-                {
-                    break;
-                }
+                    await webSocket.ReceiveAsync(buffer.ArraySegment[receivedBytes..], cancellationToken);
 
                 receivedBytes += receiveResult.Count;
+                _logger.LogDebug("Received {socketReceiveCount} bytes this pass, and {totalReceiveCount} bytes total"
+                , receiveResult.Count, receivedBytes);
 
                 if (!receiveResult.EndOfMessage)
                 {
                     if (receivedBytes >= buffer.Length - 1536)
                     {
-                        buffer.Resize(buffer.Length * 2);
+                        _logger.LogDebug("Buffer is too small, doubling size.");
+                        buffer.Resize(buffer.Length * 2, forBuffer: true);
                     }
+
+                    _logger.LogDebug("EndOfMessage flag is not set, the payload is not complete, reading next fragment.");
 
                     continue;
                 }
 
+                if (await TryConfirmClientCloseRequestAsync(webSocket, cancellationToken))
+                {
+                    break;
+                }
+
+                if (receivedBytes == 0) continue;
+
+                buffer.Resize(receivedBytes);
                 if (!Enabled)
                 {
                     receivedBytes = 0;
                     continue;
                 }
 
-                var resultBuffer = RentedArray<byte>.FromDefaultPool(receivedBytes);
-                buffer.ArraySegment[..receivedBytes].CopyTo(resultBuffer.ArraySegment);
-                buffer.Dispose();
-                buffer = RentedArray<byte>.FromPool(InitialBufferSize, s_clientSocketPool);
+                var resultBuffer = buffer.Clone(useDefaultPool: true);
+                receivedBytes = 0;
+                buffer.Resize(InitialBufferSize, forBuffer: true);
             }
 
             var source = new CancellationTokenSource();
             _logger.LogInformation("Web socket communication ended by peer.");
             source.CancelAfter(TimeSpan.FromSeconds(5));
-            if (_webSocket.CloseStatus != null)
-            {
-                await _webSocket.CloseAsync(_webSocket.CloseStatus.Value,
-                    _webSocket.CloseStatusDescription,
-                    source.Token);
-            }
-            else
-            {
-                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure,
-                    nameof(WebSocketCloseStatus.NormalClosure),
-                    source.Token);
-            }
+            await TryConfirmClientCloseRequestAsync(webSocket, source.Token);
         }
         catch (Exception ex)
         {
@@ -96,15 +93,16 @@ public sealed class CachrWebSocketPeer : IPeerConnection, IDisposable
         }
         finally
         {
-            if (_webSocket.State != WebSocketState.Closed)
+            if (webSocket.State != WebSocketState.Closed)
             {
-                _logger.LogWarning(
-                    "WebSocket loop ended, but the connection was left open. The connection will be aborted.");
+                _logger.LogWarning("WebSocket loop ended, but the connection was left open. The connection will be aborted.");
             }
-
+            _logger.LogInformation("Web socket receive loop ended");
             buffer.Dispose();
         }
     }
+
+
 
 
     public async ValueTask SendAsync(RentedArray<byte> peerMessageData, CancellationToken cancellationToken)
@@ -112,7 +110,9 @@ public sealed class CachrWebSocketPeer : IPeerConnection, IDisposable
         try
         {
             using var _ = await _sendSemaphore.AcquireAsync(cancellationToken);
-            await _webSocket.SendAsync(peerMessageData.ReadOnlyMemory,
+            var webSocket = _webSocket;
+            if (webSocket is null) return;
+            await webSocket.SendAsync(peerMessageData.ReadOnlyMemory,
                 WebSocketMessageType.Binary,
                 true,
                 cancellationToken);
@@ -121,24 +121,68 @@ public sealed class CachrWebSocketPeer : IPeerConnection, IDisposable
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "An unexpected exception occurred when writing data.");
-            if (_webSocket.CloseStatus != null) return;
-            await _webSocket.CloseAsync(
-                WebSocketCloseStatus.InternalServerError,
-                "Internal server error during send",
-                cancellationToken
-            ).IgnoreExceptions();
+            await CloseAsync("Exception sending data", cancellationToken, true);
+            _logger.LogWarning(ex, "Connection terminated");
         }
     }
 
-    public ValueTask CloseAsync()
+    private static async ValueTask<bool> TryConfirmClientCloseRequestAsync(WebSocket webSocket, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        if (webSocket.State != WebSocketState.CloseReceived) return false;
+        if (webSocket.CloseStatus == null) return false;
+        try
+        {
+            await webSocket.CloseAsync(webSocket.CloseStatus.Value,
+                webSocket.CloseStatusDescription,
+                cancellationToken);
+        }
+        catch
+        {
+            webSocket.Abort();
+        }
+
+        return true;
+    }
+    public async ValueTask CloseAsync(string reason, CancellationToken cancellationToken, bool exceptional = false)
+    {
+        var webSocket = _webSocket;
+        if (webSocket is null) return;
+        using (_logger.BeginScope("{reason}", reason))
+        using (_logger.BeginScope("{exceptional}", exceptional))
+        {
+            try
+            {
+                if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.Connecting)
+                {
+                    _logger.LogWarning("Web socket closing");
+                    if (!exceptional)
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure,
+                            $"Closed - {reason}",
+                            cancellationToken);
+                    else
+                        await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError,
+                            $"Internal server error - {reason}",
+                            cancellationToken);
+                }
+                else
+                {
+                    await TryConfirmClientCloseRequestAsync(webSocket, cancellationToken);
+                    webSocket.Abort();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Exception closing web socket, being rude and aborting instead.");
+                try { webSocket.Abort(); } catch { /* ignored */ }
+            }
+        }
     }
 
     public void Dispose()
     {
+        var webSocket = Interlocked.Exchange(ref _webSocket, null);
+        if (webSocket == null) return;
         _sendSemaphore.Dispose();
-        _webSocket.Dispose();
+        webSocket.Dispose();
     }
 }
