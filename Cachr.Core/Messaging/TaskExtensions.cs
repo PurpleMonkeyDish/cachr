@@ -1,8 +1,6 @@
-﻿// ReSharper disable RedundantUsingDirective - Shared code, no guarantee a project has these important globally.
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using System;
-namespace Cachr.Core;
+
+namespace Cachr.Core.Messaging.Cachr.Core;
 
 internal static class TaskExtensions
 {

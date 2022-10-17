@@ -21,8 +21,6 @@ public sealed class CachrWebStartupFilter : IStartupFilter
 
     private static void MapCachrUtilities(IApplicationBuilder app)
     {
-        app.UseResponseCompression();
-
         // We want the actual IP we can talk to the service on, if it went through a load balancer.
         app.UseForwardedHeaders(new ForwardedHeadersOptions() {ForwardedHeaders = ForwardedHeaders.All});
         app.UseWebSockets(new WebSocketOptions() {KeepAliveInterval = TimeSpan.FromSeconds(10)});

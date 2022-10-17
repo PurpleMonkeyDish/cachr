@@ -4,7 +4,6 @@
     <InternalsVisibleTo Include="Cachr.Benchmarks" />
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
     <VersionPrefix>0.1</VersionPrefix>
   </PropertyGroup>
   <PropertyGroup>
@@ -39,5 +38,6 @@
 
   <PropertyGroup>
     <Authors>Jason Couture</Authors>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
   </PropertyGroup>
 </Project>

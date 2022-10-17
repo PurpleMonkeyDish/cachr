@@ -3,7 +3,11 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <IsPackable>true</IsPackable>
+<!--    <IsPackable>true</IsPackable>-->
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <Title>Cachr Core</Title>
     <Description>
       This is the core Cachr library, which provides a distributed local cache, using gossip between peers.
@@ -17,7 +21,5 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
   </ItemGroup>
-
-  <Import Project="..\SharedInternalCode\SharedInternalCode.projitems" Label="Shared" />
 
 </Project>

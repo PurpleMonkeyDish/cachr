@@ -11,7 +11,6 @@ public static class ServiceCollectionExtensions
         // We must be configured at the expected path.
         // So we use a startup filter to configure ourselves, before anything else (Hopefully)
         services.AddTransient<IStartupFilter, CachrWebStartupFilter>();
-        services.AddResponseCompression();
         return services;
     }
 }
