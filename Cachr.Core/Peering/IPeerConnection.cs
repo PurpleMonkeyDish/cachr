@@ -4,9 +4,8 @@ namespace Cachr.Core.Peering;
 
 public interface IPeerConnection
 {
-    Guid Id { get; }
     bool Enabled { get; set; }
-    Uri Uri { get; }
+    PeerDescription Description { get; }
     ValueTask SendAsync(RentedArray<byte> peerMessageData, CancellationToken cancellationToken);
-    ValueTask CloseAsync();
+    ValueTask CloseAsync(string reason, CancellationToken cancellationToken, bool exceptional = false);
 }

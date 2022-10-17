@@ -80,7 +80,7 @@ public sealed class RentedArray<T> : IDisposable
     {
         if (!_disposable) return;
         var data = _dataArray;
-        if (IsPooled && data is not null)
+        if (data is not null && IsPooled)
         {
             _pool!.Return(data);
         }
@@ -115,14 +115,34 @@ public sealed class RentedArray<T> : IDisposable
         return $"RentedArray: Pooled: {IsPooled}, Length: {ArraySegment.Count}, {string.Join(", ", ArraySegment)}";
     }
 
-    public RentedArray<T> Clone()
+    public RentedArray<T> Clone(ArrayPool<T>? pool = null, bool useDefaultPool = false, bool forBuffer = false)
     {
-        var newArray = FromPool(this.Length, _pool);
+        var newArray = FromPool(this.Length, pool ?? (useDefaultPool ? ArrayPool<T>.Shared :  _pool), forBuffer);
         ArraySegment.CopyTo(newArray.ArraySegment);
         return newArray;
     }
 
-    public void Resize(int size)
+    private static void Resize(RentedArray<T> rentedArray, int newSize, bool keepData, bool forBuffer)
+    {
+        if (rentedArray.Length == newSize) return;
+        var next = Array.Empty<T>();
+        if (newSize > 0)
+        {
+            next = rentedArray._pool?.Rent(newSize) ?? new T[newSize];
+        }
+
+        if (newSize > 0 && keepData)
+        {
+            var countToCopy = rentedArray.Length > newSize ? newSize : rentedArray.Length;
+            rentedArray.ArraySegment[..countToCopy].CopyTo(next);
+        }
+
+        if (!ReferenceEquals(rentedArray._dataArray, next))
+            rentedArray._pool?.Return(rentedArray._dataArray!);
+        rentedArray.SetInternalVariables(next, rentedArray._pool, forBuffer ? next.Length : newSize);
+    }
+
+    public void Resize(int size, bool keepData = true, bool forBuffer = false)
     {
         ThrowIfDisposed();
         if (size < 0) throw new ArgumentOutOfRangeException(nameof(size), "Size must be greater than or equal to zero");
@@ -132,17 +152,18 @@ public sealed class RentedArray<T> : IDisposable
         // Allocate a new buffer of size, when our internal buffer isn't enough.
         if (size > _dataArray!.Length)
         {
-            var next = _pool?.Rent(size) ?? new T[size];
-            var countToCopy = Length > size ? size : Length;
-            ArraySegment[..countToCopy].CopyTo(next);
-            _pool?.Return(_dataArray!);
-            SetInternalVariables(next, _pool, size);
+            Resize(this, size, keepData, forBuffer);
             return;
+        }
+
+        if (size < _dataArray!.Length / 2)
+        {
+            Resize(this, size, keepData, forBuffer);
         }
 
 
         // When size is 0, or less than our buffer, rather than re-allocate
         // We can just set our size, and setup our segment and read only memory.
-        SetInternalVariables(_dataArray!, _pool, size);
+        SetInternalVariables(_dataArray!, _pool, forBuffer ? Length : size);
     }
 }
