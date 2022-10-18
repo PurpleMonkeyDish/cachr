@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1666057437215,
+  "lastUpdate": 1666057454123,
   "repoUrl": "https://github.com/PurpleMonkeyDish/cachr",
   "entries": {
     "Benchmark - MessageBusIterationBenchmarks - ubuntu-latest": [
@@ -3306,6 +3306,44 @@ window.BENCHMARK_DATA = {
             "value": 27186.26948038737,
             "unit": "ns",
             "range": "± 1117.6336066996396"
+          }
+        ]
+      }
+    ],
+    "Benchmark - Cachr.Benchmarks.WebSocketBenchmarks - macos-latest": [
+      {
+        "commit": {
+          "author": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "committer": {
+            "email": "jasonc@alertr.info",
+            "name": "Jason Couture",
+            "username": "jasoncouture"
+          },
+          "distinct": true,
+          "id": "5410d9d6ab008c064b37c542b2690a07bba173dd",
+          "message": "Don't fail build when benchmark is out of range, just comment.\n\nPerformance on GH is too unstable to make this a failure. A human needs to review benchmark results instead.",
+          "timestamp": "2022-10-17T21:35:35-04:00",
+          "tree_id": "e5f3eff7394d705a7ce69ef9e266b60054e8a6b0",
+          "url": "https://github.com/PurpleMonkeyDish/cachr/commit/5410d9d6ab008c064b37c542b2690a07bba173dd"
+        },
+        "date": 1666057452149,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Cachr.Benchmarks.WebSocketBenchmarks.WebSocketSendBenchmark(BufferSize: 4096)",
+            "value": 244585.80460611978,
+            "unit": "ns",
+            "range": "± 81946.32399418563"
+          },
+          {
+            "name": "Cachr.Benchmarks.WebSocketBenchmarks.WebSocket512ConcurrentClientBenchmark(BufferSize: 4096)",
+            "value": 74587.914255778,
+            "unit": "ns",
+            "range": "± 10313.364937941245"
           }
         ]
       }
