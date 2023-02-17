@@ -25,12 +25,12 @@ runs:
         echo "set-output name=version-prefix::$(cat version.txt | grep -v '#' | head -n 1)"
         echo "::set-output name=version-prefix::$(cat version.txt | grep -v '#' | head -n 1)"
     - shell: bash
-      if: github.ref == 'refs/heads/staging' # 1.0.<BUILD>-prerelease-timestamp
+      if: github.ref == 'refs/heads/staging' # <version.txt>.<BUILD>-prerelease-timestamp
       run: |
         echo "set-output name=version-suffix::prerelease-$(date +%Y%j%H%M%S)"
         echo "::set-output name=version-suffix::prerelease-$(date +%Y%j%H%M%S)"
     - shell: bash
-      if: github.ref == 'refs/heads/main' # 1.0.<BUILD>
+      if: github.ref == 'refs/heads/main' # <version.txt>.<BUILD>
       run: |
         echo "set-output name=version-suffix::"
         echo "::set-output name=version-suffix::"
