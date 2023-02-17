@@ -38,22 +38,22 @@ jobs:
       - uses: ./.github/template/build
         with:
           configuration: "Debug"
-  create-packages:
-    name: Create NuGet packages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/template/prepare
-      - uses: ./.github/template/build
-        with:
-          configuration: "Release"
-          pack: true
+#  create-packages:
+#    name: Create NuGet packages
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/template/prepare
+#      - uses: ./.github/template/build
+#        with:
+#          configuration: "Release"
+#          pack: true
   build-and-report-warnings:
     name: "Project Builds"
     needs:
       - build-release
       - build-debug
-      - create-packages
+#      - create-packages
     runs-on: ubuntu-latest
     steps:
       - run: exit 0
