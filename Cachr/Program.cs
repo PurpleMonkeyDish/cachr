@@ -18,7 +18,9 @@ app.UseResponseCompression();
 app.UseResponseCaching();
 app.UseOrleansDashboard(options: new DashboardOptions()
 {
-    HostSelf = false, CounterUpdateIntervalMs = 10000, BasePath = "/dashboard"
+    HostSelf = false,
+    CounterUpdateIntervalMs = 10000,
+    BasePath = "/dashboard"
 });
 
 app.MapGet("/", () => "Hello World!");
