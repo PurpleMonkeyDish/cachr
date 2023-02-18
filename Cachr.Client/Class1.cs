@@ -1,4 +1,4 @@
-﻿namespace Cachr.Client;
+namespace Cachr.Client;
 public class Class1
 {
 
