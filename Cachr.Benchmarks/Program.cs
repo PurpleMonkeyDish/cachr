@@ -1,17 +1,18 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.ConsoleArguments;
+using BenchmarkDotNet.Filters;
+using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Running;
+using Cachr.Benchmarks;
+using Microsoft.CodeAnalysis;
 
-var configuration = ManualConfig
-    .Create(DefaultConfig.Instance)
-    .WithOption(ConfigOptions.JoinSummary, true)
-    .WithOption(ConfigOptions.DisableLogFile, true);
-try
+if (!args.Contains("--filter"))
 {
-    BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, configuration);
+    args = args.Append("--filter").Append("*").ToArray();
 }
-catch (InvalidOperationException e) when ((e.StackTrace?.Contains("Diagnosers.CompositeDiagnoser.DisplayResults") == true) &&
-                                          e.Message == "Sequence contains no elements")
-{
-}
+
+
+
+BenchmarkSwitcher.FromAssembly(typeof(BitEncoderBenchmarks).Assembly).Run(args);
