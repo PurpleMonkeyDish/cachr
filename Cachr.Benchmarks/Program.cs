@@ -70,12 +70,4 @@ public class ProtocolSerializerBenchmark
         var bytes = await _cacheCommandSerializer.GetBytesAsync(_cacheCommand);
         await _cacheCommandSerializer.ReadBytesAsync(bytes);
     }
-
-    private static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings()
-    {
-        TypeNameHandling = TypeNameHandling.Auto,
-        TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
-        ConstructorHandling = ConstructorHandling.Default,
-        Formatting = Formatting.None
-    };
 }
