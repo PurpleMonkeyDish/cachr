@@ -1,0 +1,26 @@
+version: "3.7"
+
+x-custom:
+  platforms: &platforms
+    - linux/amd64
+    - linux/arm64
+services:
+  cachr-api:
+    build:
+      context: .
+      args:
+        - PROJECT=Cachr.Server
+      platforms: *platforms
+      x-bake:
+        platforms: *platforms
+
+  cachr-ui:
+    depends_on:
+      - cachr-api
+    build:
+      context: .
+      args:
+        - PROJECT=Cachr.Server.UI
+      platforms: *platforms
+      x-bake:
+        platforms: *platforms
