@@ -1,6 +1,14 @@
+using Cachr.Core;
+using Cachr.Core.Data;
+using Microsoft.EntityFrameworkCore;
+
+SQLitePCL.Batteries.Init();
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddObjectStorage(builder.Configuration.GetSection("Storage"));
 var app = builder.Build();
 
 app.MapGet("/", () => "Hello World!");
 
-app.Run();
+
+
+await app.RunAsync();
