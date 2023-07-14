@@ -31,6 +31,9 @@ namespace Cachr.Core.Migrations
                     b.Property<long>("Modified")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Shard")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Key");
 
                     b.HasIndex("MetadataId")
@@ -47,17 +50,17 @@ namespace Cachr.Core.Migrations
                     b.Property<long?>("AbsoluteExpiration")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("CurrentExpiration")
+                    b.Property<long>("Created")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("Modified")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("SlidingExpiration")
+                    b.Property<long>("LastAccess")
                         .HasColumnType("INTEGER");
+
+                    b.Property<long>("Modified")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("SlidingExpiration")
+                        .HasColumnType("REAL");
 
                     b.HasKey("Id");
 
@@ -67,8 +70,8 @@ namespace Cachr.Core.Migrations
             modelBuilder.Entity("Cachr.Core.Data.StoredObject", b =>
                 {
                     b.HasOne("Cachr.Core.Data.StoredObjectMetadata", "Metadata")
-                        .WithOne()
-                        .HasForeignKey("Cachr.Core.Data.StoredObject", "MetadataId")
+                        .WithMany()
+                        .HasForeignKey("MetadataId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
