@@ -15,7 +15,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddOptions<StorageObjectConfiguration>().Bind(configuration);
         services.AddDbContextPool<ObjectStorageContext>((provider, builder) =>
-            builder.UseSqlite(provider.GetRequiredService<IOptions<StorageObjectConfiguration>>().Value.ConnectionString));
+            builder.UseSqlite(
+                provider.GetRequiredService<IOptions<StorageObjectConfiguration>>().Value.ConnectionString));
         services.AddTransient<IStartupFilter, MigrationStartupFilter>();
         services.AddTransient<ICacheStorage, CacheStorage>();
         services.AddTransient<IDataMapper, DataMapper>();
@@ -37,6 +38,7 @@ public class MigrationStartupFilter : IStartupFilter
 
                 dbContext.Database.Migrate();
             }
+
             next(context);
         };
     }

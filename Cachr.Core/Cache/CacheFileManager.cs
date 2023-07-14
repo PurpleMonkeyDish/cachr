@@ -5,32 +5,42 @@ namespace Cachr.Core.Cache;
 
 public class CacheFileManager : ICacheFileManager
 {
-    public string FileName => "object.bin";
+    private const FileShare ShareMode = FileShare.ReadWrite | FileShare.Delete;
     private readonly IOptions<StorageObjectConfiguration> _options;
-
-    public string BasePath => _options.Value.BasePath;
 
     public CacheFileManager(IOptions<StorageObjectConfiguration> options)
     {
         _options = options;
     }
 
-    private const FileShare ShareMode = FileShare.ReadWrite | FileShare.Delete;
+    public string FileName => "object.bin";
+
+    public string BasePath => _options.Value.BasePath;
 
     public void PurgeShard(int shard)
     {
         var target = Path.GetFullPath(Path.Combine(BasePath, shard.ToString()));
         if (Directory.Exists(target))
         {
-            Directory.Delete(target, recursive: true);
+            Directory.Delete(target, true);
         }
     }
+
     public Stream Open(Guid id, int shard, bool readOnly)
     {
         var path = GetPath(id, shard);
         return readOnly
             ? File.Open(path, FileMode.Open, FileAccess.Read, ShareMode)
             : File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, ShareMode);
+    }
+
+    public void Delete(Guid id, int shard)
+    {
+        var path = GetPath(id, shard);
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
     }
 
     private string GetPath(Guid id, int shard)
@@ -43,14 +53,5 @@ public class CacheFileManager : ICacheFileManager
             objectDirectory));
         var directory = Directory.CreateDirectory(path);
         return Path.Combine(directory.FullName, FileName);
-    }
-
-    public void Delete(Guid id, int shard)
-    {
-        var path = GetPath(id, shard);
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
     }
 }
