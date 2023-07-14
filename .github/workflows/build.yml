@@ -20,6 +20,8 @@ jobs:
           images: |
             ghcr.io/purplemonkeydish/cachr-ui
             ghcr.io/purplemonkeydish/cachr-api
+            cachr-ui
+            cachr-api
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
