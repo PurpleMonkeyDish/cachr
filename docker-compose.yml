@@ -7,11 +7,13 @@ x-custom:
 
 services:
   cachr-api:
-    image: ghcr.io/purplemonkeydish/cachr-api
-    environment:
-      TAG: dev
+    image: ghcr.io/purplemonkeydish/cachr-api:${TAG-local-dev}
     build:
       context: .
+      cache_from:
+        - ghcr.io/purplemonkeydish/cachr-api:nightly
+        - ghcr.io/purplemonkeydish/cachr-api:latest
+        - ghcr.io/purplemonkeydish/cachr-api:main
       args:
         - PROJECT=Cachr.Server
       platforms: *platforms
@@ -21,11 +23,13 @@ services:
   cachr-ui:
     depends_on:
       - cachr-api
-    image: ghcr.io/purplemonkeydish/cachr-ui
-    environment:
-      TAG: dev
+    image: ghcr.io/purplemonkeydish/cachr-ui:${TAG-local-dev}
     build:
       context: .
+      cache_from:
+        - ghcr.io/purplemonkeydish/cachr-ui:nightly
+        - ghcr.io/purplemonkeydish/cachr-ui:latest
+        - ghcr.io/purplemonkeydish/cachr-ui:main
       args:
         - PROJECT=Cachr.Server.UI
       platforms: *platforms
