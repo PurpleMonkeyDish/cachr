@@ -4,8 +4,12 @@ x-custom:
   platforms: &platforms
     - linux/amd64
     - linux/arm64
+
 services:
   cachr-api:
+    image: ghcr.io/purplemonkeydish/cachr-api
+    environment:
+      TAG: dev
     build:
       context: .
       args:
@@ -17,6 +21,9 @@ services:
   cachr-ui:
     depends_on:
       - cachr-api
+    image: ghcr.io/purplemonkeydish/cachr-ui
+    environment:
+      TAG: dev
     build:
       context: .
       args:
