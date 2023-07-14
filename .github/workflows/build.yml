@@ -43,3 +43,5 @@ jobs:
         with:
           files: docker-compose.yml
           push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
