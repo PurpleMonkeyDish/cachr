@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Cachr.Server.UI.Data;
 
 var builder = WebApplication.CreateBuilder(args);
