@@ -24,6 +24,7 @@ internal class StoredObject
     public Guid MetadataId { get; set; }
     public long Created { get; set; } = DateTimeOffset.Now.ToUnixTimeMilliseconds();
     public long Modified { get; set; } = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+    public virtual required StoredObjectMetadata Metadata { get; set; }
 }
 
 internal class StoredObjectMetadata
@@ -49,7 +50,7 @@ public class ObjectStorageContext : DbContext
         modelBuilder.Entity<StoredObject>().HasKey(i => i.Key);
         modelBuilder.Entity<StoredObject>().HasIndex(i => i.MetadataId).IsUnique();
         modelBuilder.Entity<StoredObject>().Property(i => i.MetadataId).IsRequired();
-        modelBuilder.Entity<StoredObject>().HasOne<StoredObjectMetadata>();
+        modelBuilder.Entity<StoredObject>().HasOne<StoredObjectMetadata>(i => i.Metadata).WithOne();
 
         modelBuilder.Entity<StoredObjectMetadata>().HasKey(i => i.Id);
         modelBuilder.Entity<StoredObjectMetadata>().Property(i => i.Id).IsRequired().ValueGeneratedNever();
