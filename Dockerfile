@@ -39,6 +39,7 @@ RUN dotnet publish --no-restore ${PROJECT}/${PROJECT}.csproj -c $CONFIGURATION -
 FROM mcr.microsoft.com/dotnet/aspnet:$DOTNET_RUNTIME_VERSION AS final
 ARG PROJECT
 ARG DOCKER_USER=default_user
+LABEL org.opencontainers.image.source="https://github.com/PurpleMonkeyDish/cachr"
 RUN addgroup --system $DOCKER_USER && adduser --system $DOCKER_USER && addgroup ${DOCKER_USER} ${DOCKER_USER}
 USER ${DOCKER_USER}
 ENV STARTUP_PROJECT=$PROJECT
