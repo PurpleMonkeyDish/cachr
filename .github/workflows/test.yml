@@ -16,15 +16,19 @@ jobs:
     name: "Unit Tests on ${{ matrix.os }}"
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/template/prepare
-      - uses: ./.github/template/build
+      - uses: actions/setup-dotnet@v2
         with:
-          configuration: Debug
-          no-warnings: true
+          dotnet-version: |
+            7.0.x
+          include-prerelease: false
+      - uses: actions/cache@v3
+        id: cache-nuget
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}-${{ hashFiles('**/*.csproj')}}
       - uses: zyborg/dotnet-tests-report@v1
         if: github.ref != 'refs/heads/main'
         with:
-          no_build: true
           report_name: unit-tests-${{matrix.os}}
           report_title: Unit Test Results - ${{matrix.os}}
           set_check_status_from_test_outcome: true

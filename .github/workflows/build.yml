@@ -8,52 +8,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' && github.event.pull_request.number) || github.head_ref }}
   cancel-in-progress: true
 jobs:
-  build-release:
-    name: "Build release on ${{matrix.os}}"
-    strategy:
-      matrix:
-        os:
-          - "ubuntu-latest"
-          - "macos-latest"
-          - "windows-latest"
-    runs-on: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/template/prepare
-      - uses: ./.github/template/build
-        with:
-          configuration: "Release"
-  build-debug:
-    name: "Build debug on ${{matrix.os}}"
-    strategy:
-      matrix:
-        os:
-          - "ubuntu-latest"
-          - "macos-latest"
-          - "windows-latest"
-    runs-on: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/template/prepare
-      - uses: ./.github/template/build
-        with:
-          configuration: "Debug"
-  create-packages:
-    name: Create NuGet packages
+  build-docker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/template/prepare
-      - uses: ./.github/template/build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - shell: bash
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' # 0.1.<BUILD>-dev-SHA
+        run: |
+          echo "version-prefix=0.1" | tee -a $GITHUB_ENV
+      - shell: bash
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' # 0.1.<BUILD>-dev-SHA
+        run: |
+          echo "version-suffix=dev-$GITHUB_SHA" | tee -a $GITHUB_ENV
+      - shell: bash
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+        run: |
+          echo "version-prefix=$(cat version.txt | grep -v '#' | head -n 1)" | tee -a $GITHUB_ENV
+      - shell: bash
+        if: github.ref == 'refs/heads/staging' # 1.0.<BUILD>-prerelease-timestamp
+        run: |
+          echo "version-suffix=prerelease-$(date +%Y%j%H%M%S)" | tee -a $GITHUB_ENV
+      - uses: docker/bake-action@v3
         with:
-          configuration: "Release"
-          pack: true
-  build-and-report-warnings:
-    name: "Project Builds"
-    needs:
-      - build-release
-      - build-debug
-      - create-packages
-    runs-on: ubuntu-latest
-    steps:
-      - run: exit 0
+          files: docker-compose.yml
+          push: false
