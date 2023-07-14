@@ -19,11 +19,18 @@ public sealed partial class DataMapper : IDataMapper
     public partial CacheEntry? MapCacheEntryData(StoredObject? storedObject);
 
 
-    private static DateTimeOffset? MapLongToNullableDateTimeOffset(long? l) =>
-        l is null ? new DateTimeOffset?() : DateTimeOffset.FromUnixTimeMilliseconds(l.Value);
+    private static DateTimeOffset? MapLongToNullableDateTimeOffset(long? l)
+    {
+        return l is null ? new DateTimeOffset?() : DateTimeOffset.FromUnixTimeMilliseconds(l.Value);
+    }
 
-    private static TimeSpan? MapLongToTimeSpan(double? l) =>
-        l is null ? new TimeSpan?() : TimeSpan.FromMilliseconds(l.Value);
+    private static TimeSpan? MapLongToTimeSpan(double? l)
+    {
+        return l is null ? new TimeSpan?() : TimeSpan.FromMilliseconds(l.Value);
+    }
 
-    private static DateTimeOffset MapLongToDateTimeOffset(long l) => DateTimeOffset.FromUnixTimeMilliseconds(l);
+    private static DateTimeOffset MapLongToDateTimeOffset(long l)
+    {
+        return DateTimeOffset.FromUnixTimeMilliseconds(l);
+    }
 }

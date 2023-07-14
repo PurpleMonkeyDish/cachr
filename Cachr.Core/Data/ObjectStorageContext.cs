@@ -9,6 +9,9 @@ public class ObjectStorageContext : DbContext
     {
     }
 
+    public DbSet<StoredObject> StoredObjects { get; set; }
+    public DbSet<StoredObjectMetadata> ObjectMetadata { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<StoredObject>().Property(i => i.Key).IsRequired().ValueGeneratedNever();
@@ -21,7 +24,4 @@ public class ObjectStorageContext : DbContext
         modelBuilder.Entity<StoredObjectMetadata>().Property(i => i.Id).IsRequired().ValueGeneratedNever();
         base.OnModelCreating(modelBuilder);
     }
-
-    public DbSet<StoredObject> StoredObjects { get; set; }
-    public DbSet<StoredObjectMetadata> ObjectMetadata { get; set; }
 }

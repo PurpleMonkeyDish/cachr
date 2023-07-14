@@ -41,7 +41,11 @@ public class CacheStorage : ICacheStorage
         await using var transaction =
             await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         var metadata = await GetMetadataAsync(key, cancellationToken);
-        if (metadata is null) return null;
+        if (metadata is null)
+        {
+            return null;
+        }
+
         var metadataEntry = await _context.ObjectMetadata.Where(i => i.Id == metadata.MetadataId)
             .SingleAsync(cancellationToken);
         metadataEntry.SlidingExpiration = (int?)slidingExpiration?.TotalMilliseconds;
@@ -61,7 +65,10 @@ public class CacheStorage : ICacheStorage
         var metadata = await _context.StoredObjects.Where(i => i.Key == key).Select(i => i.Metadata)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
-        if (metadata is null) return;
+        if (metadata is null)
+        {
+            return;
+        }
 
         metadata.LastAccess = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -76,7 +83,11 @@ public class CacheStorage : ICacheStorage
         var record = await GetMetadataAsync(remoteRecord.Key, cancellationToken).ConfigureAwait(false);
         if (record is not null)
         {
-            if (record.Modified == remoteRecord.Modified && remoteRecord.MetadataId == record.MetadataId) return;
+            if (record.Modified == remoteRecord.Modified && remoteRecord.MetadataId == record.MetadataId)
+            {
+                return;
+            }
+
             if (record.Modified > remoteRecord.Modified)
             {
                 await needsUpdateCallback(remoteRecord, true).ConfigureAwait(false);
@@ -91,12 +102,17 @@ public class CacheStorage : ICacheStorage
         int shard,
         double percentage = 0.01,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
-        )
+    )
     {
         percentage = Math.Clamp(percentage, 0, 1);
-        var count = await _context.StoredObjects.CountAsync(i => i.Shard == shard, cancellationToken).ConfigureAwait(false);
+        var count = await _context.StoredObjects.CountAsync(i => i.Shard == shard, cancellationToken)
+            .ConfigureAwait(false);
         var takeCount = (int)(count * percentage);
-        if (takeCount == 0) takeCount = 1;
+        if (takeCount == 0)
+        {
+            takeCount = 1;
+        }
+
         await foreach (var item in _context.StoredObjects.Where(i => i.Shard == shard)
                            .Include(i => i.Metadata)
                            .OrderBy(i => EF.Functions.Random())
@@ -104,15 +120,17 @@ public class CacheStorage : ICacheStorage
                            .AsAsyncEnumerable()
                            .WithCancellation(cancellationToken)
                            .ConfigureAwait(false)
-                       )
+                      )
         {
             yield return _dataMapper.MapCacheEntryData(item)!;
         }
     }
+
     public async IAsyncEnumerable<CacheEntry> StreamShardAsync(int shard,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await foreach (var item in _context.StoredObjects.Include(i => i.Metadata).Where(i => i.Shard == shard).AsAsyncEnumerable().WithCancellation(cancellationToken))
+        await foreach (var item in _context.StoredObjects.Include(i => i.Metadata).Where(i => i.Shard == shard)
+                           .AsAsyncEnumerable().WithCancellation(cancellationToken))
         {
             yield return _dataMapper.MapCacheEntryData(item)!;
         }
@@ -120,11 +138,15 @@ public class CacheStorage : ICacheStorage
 
     public async Task<int> ReapAsync(int count, CancellationToken cancellationToken)
     {
-        int currentCount = 0;
+        var currentCount = 0;
 
         foreach (var file in EnumerateStoredObjects())
         {
-            if (currentCount >= count) break;
+            if (currentCount >= count)
+            {
+                break;
+            }
+
             (Guid id, int shard) info;
             try
             {
@@ -139,9 +161,13 @@ public class CacheStorage : ICacheStorage
             await using var transaction =
                 await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
             var storedRecord = await _context.StoredObjects
-                .FirstOrDefaultAsync(i => i.MetadataId == info.id, cancellationToken: cancellationToken)
+                .FirstOrDefaultAsync(i => i.MetadataId == info.id, cancellationToken)
                 .ConfigureAwait(false);
-            if (storedRecord is not null) continue;
+            if (storedRecord is not null)
+            {
+                continue;
+            }
+
             await _context.ObjectMetadata
                 .Where(i => i.Id == info.id)
                 .ExecuteDeleteAsync(cancellationToken)
@@ -157,44 +183,13 @@ public class CacheStorage : ICacheStorage
             {
                 _logger.LogWarning(ex, "Failed to delete object {id} on shard {shard}", info.id, info.shard);
             }
+
             // We count this even if the delete fails
             // As this is the return value, which may be an indicator to the caller if they need to make another pass or not.
             currentCount++;
         }
 
         return currentCount;
-    }
-
-    private int GetShard(FileInfo fileInfo)
-    {
-        return int.Parse(fileInfo.Directory!.Parent!.Parent!.Parent!.Name);
-    }
-
-    private Guid GetId(FileInfo fileInfo)
-    {
-        return Guid.Parse(fileInfo.Directory!.Name);
-    }
-
-    private IEnumerable<FileInfo> EnumerateStoredObjects()
-    {
-        var directoryInfo = new DirectoryInfo(Path.GetFullPath(_fileManager.BasePath));
-        return directoryInfo.EnumerateFiles(_fileManager.FileName,
-            new EnumerationOptions()
-            {
-                MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = true, MaxRecursionDepth = 6
-            });
-    }
-
-    private async Task TryReapRecord(Guid id, CancellationToken cancellationToken)
-    {
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-        if (await _context.StoredObjects.AnyAsync(i => i.MetadataId == id, cancellationToken)
-                .ConfigureAwait(false)) return;
-        await _context.ObjectMetadata
-            .Where(i => i.Id == id)
-            .ExecuteDeleteAsync(cancellationToken)
-            .ConfigureAwait(false);
-        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task CreateOrReplaceEntryAsync(string key,
@@ -208,13 +203,13 @@ public class CacheStorage : ICacheStorage
         await using var dbTransaction =
             await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         var storedObject = await _context.StoredObjects.FindAsync(new object?[] { key }, cancellationToken);
-        await using (var fileStream = _fileManager.Open(targetId, shard, readOnly: false))
+        await using (var fileStream = _fileManager.Open(targetId, shard, false))
         {
             await callbackAsync(fileStream).ConfigureAwait(false);
             await fileStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        var metadataEntry = new StoredObjectMetadata()
+        var metadataEntry = new StoredObjectMetadata
         {
             Id = targetId,
             AbsoluteExpiration = absoluteExpiration?.ToUnixTimeMilliseconds(),
@@ -232,7 +227,7 @@ public class CacheStorage : ICacheStorage
         }
         else
         {
-            storedObject = new StoredObject() { Key = key, MetadataId = metadataEntry.Id, Shard = shard };
+            storedObject = new StoredObject { Key = key, MetadataId = metadataEntry.Id, Shard = shard };
             _context.Add(storedObject);
         }
 
@@ -243,5 +238,41 @@ public class CacheStorage : ICacheStorage
         {
             _fileManager.Delete(originalId.Value, shard);
         }
+    }
+
+    private int GetShard(FileInfo fileInfo)
+    {
+        return int.Parse(fileInfo.Directory!.Parent!.Parent!.Parent!.Name);
+    }
+
+    private Guid GetId(FileInfo fileInfo)
+    {
+        return Guid.Parse(fileInfo.Directory!.Name);
+    }
+
+    private IEnumerable<FileInfo> EnumerateStoredObjects()
+    {
+        var directoryInfo = new DirectoryInfo(Path.GetFullPath(_fileManager.BasePath));
+        return directoryInfo.EnumerateFiles(_fileManager.FileName,
+            new EnumerationOptions
+            {
+                MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = true, MaxRecursionDepth = 6
+            });
+    }
+
+    private async Task TryReapRecord(Guid id, CancellationToken cancellationToken)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        if (await _context.StoredObjects.AnyAsync(i => i.MetadataId == id, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return;
+        }
+
+        await _context.ObjectMetadata
+            .Where(i => i.Id == id)
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 }
