@@ -1,6 +1,4 @@
 using Cachr.Core;
-using Cachr.Core.Data;
-using Microsoft.EntityFrameworkCore;
 
 SQLitePCL.Batteries.Init();
 var builder = WebApplication.CreateBuilder(args);
