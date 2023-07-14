@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - shell: bash
         if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' # 0.1.<BUILD>-dev-SHA
         run: |
@@ -43,6 +45,10 @@ jobs:
         with:
           files: docker-compose.yml
           push: true
+      - shell: bash
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "TAG=latest" | tee -a $GITHUB_ENV
       - uses: docker/bake-action@v3
         if: github.ref == 'refs/heads/main'
         with:
@@ -50,3 +56,12 @@ jobs:
           push: true
         env:
           TAG: latest
+      - shell: bash
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "TAG=v$(cat version.txt | grep -v '#' | head -n 1)" | tee -a $GITHUB_ENV
+      - uses: docker/bake-action@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          files: docker-compose.yml
+          push: true
