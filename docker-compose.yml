@@ -7,9 +7,7 @@ x-custom:
 
 services:
   cachr-api:
-    image: ghcr.io/purplemonkeydish/cachr-api
-    environment:
-      TAG: dev
+    image: ghcr.io/purplemonkeydish/cachr-api:${TAG-local-dev}
     build:
       context: .
       args:
@@ -21,9 +19,7 @@ services:
   cachr-ui:
     depends_on:
       - cachr-api
-    image: ghcr.io/purplemonkeydish/cachr-ui
-    environment:
-      TAG: dev
+    image: ghcr.io/purplemonkeydish/cachr-ui:${TAG-local-dev}
     build:
       context: .
       args:

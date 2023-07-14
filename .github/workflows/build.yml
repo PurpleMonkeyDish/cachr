@@ -12,29 +12,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/purplemonkeydish/cachr-ui
-            ghcr.io/purplemonkeydish/cachr-api
-            cachr-ui
-            cachr-api
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
+      - shell: bash
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' # 0.1.<BUILD>-dev-SHA
+        run: |
+          echo "VERSION_SUFFIX=-sha-$(git rev-parse --short $GITHUB_SHA)" | tee -a $GITHUB_ENV
+      - shell: bash
+        run: |
+          echo "VERSION_PREFIX=$(cat version.txt | grep -v '#' | head -n 1)" | tee -a $GITHUB_ENV
+      - shell: bash
+        if: github.ref == 'refs/heads/staging' # 1.0.<BUILD>-prerelease-timestamp
+        run: |
+          echo "VERSION_SUFFIX=-prerelease-$(date +%Y%j%H%M%S)" | tee -a $GITHUB_ENV
+      - shell: bash
+        run: |
+          echo "VERSION_FULL=${VERSION_PREFIX}${VERSION_SUFFIX}" | tee -a $GITHUB_ENV
+          echo "TAG=sha-$(git rev-parse --short $GITHUB_SHA)" | tee -a $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: image=moby/buildkit:v0.9.1
       - name: Login to GHCR
         uses: docker/login-action@v2
         with:
@@ -45,5 +43,10 @@ jobs:
         with:
           files: docker-compose.yml
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      - uses: docker/bake-action@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          files: docker-compose.yml
+          push: true
+        env:
+          TAG: latest
