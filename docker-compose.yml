@@ -19,6 +19,8 @@ services:
       platforms: *platforms
       x-bake:
         platforms: *platforms
+      labels:
+        org.opencontainers.image.description: Cachr API Server
 
   cachr-ui:
     depends_on:
@@ -35,3 +37,5 @@ services:
       platforms: *platforms
       x-bake:
         platforms: *platforms
+      labels:
+        org.opencontainers.image.description: Cachr UI Server
