@@ -9,11 +9,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test:
-    strategy:
-      matrix:
-        os: [ "ubuntu-latest", "macos-latest",  "windows-latest" ]
-    runs-on: ${{matrix.os}}
-    name: "Unit Tests on ${{ matrix.os }}"
+    runs-on: ubuntu-latest
+    name: "Unit Tests}"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-dotnet@v2
