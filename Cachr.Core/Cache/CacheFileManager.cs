@@ -17,6 +17,14 @@ public class CacheFileManager : ICacheFileManager
 
     private const FileShare ShareMode = FileShare.ReadWrite | FileShare.Delete;
 
+    public void PurgeShard(int shard)
+    {
+        var target = Path.GetFullPath(Path.Combine(BasePath, shard.ToString()));
+        if (Directory.Exists(target))
+        {
+            Directory.Delete(target, recursive: true);
+        }
+    }
     public Stream Open(Guid id, int shard, bool readOnly)
     {
         var path = GetPath(id, shard);

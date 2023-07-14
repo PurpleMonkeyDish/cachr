@@ -16,4 +16,5 @@ public interface ICacheFileManager
 
     public string BasePath { get; }
     public string FileName { get; }
+    void PurgeShard(int shard);
 }
