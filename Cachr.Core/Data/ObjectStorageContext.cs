@@ -23,8 +23,7 @@ internal class StoredObject
     public required string Key { get; set; }
     public Guid MetadataId { get; set; }
     public long Created { get; set; } = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-    [Column("Modified")]
-    public long LastUpdate { get; set; } = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+    public long Modified { get; set; } = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 }
 
 internal class StoredObjectMetadata
