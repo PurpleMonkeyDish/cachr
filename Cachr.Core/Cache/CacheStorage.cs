@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Runtime.CompilerServices;
 using Cachr.Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -65,6 +67,56 @@ public class CacheStorage : ICacheStorage
         metadata.LastAccess = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task SyncRecordAsync(
+        CacheEntry remoteRecord,
+        Func<CacheEntry, bool, Task> needsUpdateCallback,
+        CancellationToken cancellationToken)
+    {
+        var record = await GetMetadataAsync(remoteRecord.Key, cancellationToken).ConfigureAwait(false);
+        if (record is not null)
+        {
+            if (record.Modified == remoteRecord.Modified && remoteRecord.MetadataId == record.MetadataId) return;
+            if (record.Modified > remoteRecord.Modified)
+            {
+                await needsUpdateCallback(remoteRecord, true).ConfigureAwait(false);
+                return;
+            }
+        }
+
+        await needsUpdateCallback(remoteRecord, false).ConfigureAwait(false);
+    }
+
+    public async IAsyncEnumerable<CacheEntry> SampleShardAsync(
+        int shard,
+        double percentage = 0.01,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+        )
+    {
+        percentage = Math.Clamp(percentage, 0, 1);
+        var count = await _context.StoredObjects.CountAsync(i => i.Shard == shard, cancellationToken).ConfigureAwait(false);
+        var takeCount = (int)(count * percentage);
+        if (takeCount == 0) takeCount = 1;
+        await foreach (var item in _context.StoredObjects.Where(i => i.Shard == shard)
+                           .Include(i => i.Metadata)
+                           .OrderBy(i => EF.Functions.Random())
+                           .Take(takeCount)
+                           .AsAsyncEnumerable()
+                           .WithCancellation(cancellationToken)
+                           .ConfigureAwait(false)
+                       )
+        {
+            yield return _dataMapper.MapCacheEntryData(item)!;
+        }
+    }
+    public async IAsyncEnumerable<CacheEntry> StreamShardAsync(int shard,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await foreach (var item in _context.StoredObjects.Include(i => i.Metadata).Where(i => i.Shard == shard).AsAsyncEnumerable().WithCancellation(cancellationToken))
+        {
+            yield return _dataMapper.MapCacheEntryData(item)!;
+        }
     }
 
     public async Task<int> ReapAsync(int count, CancellationToken cancellationToken)
