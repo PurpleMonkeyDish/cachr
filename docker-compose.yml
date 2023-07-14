@@ -13,11 +13,7 @@ services:
       cache_from:
         - ghcr.io/purplemonkeydish/cachr-api:nightly
         - ghcr.io/purplemonkeydish/cachr-api:latest
-        - ghcr.io/purplemonkeydish/cachr-api
-        - ghcr.io/purplemonkeydish/cachr-api-cache:${CACHETAG-local}
-        - ghcr.io/purplemonkeydish/cachr-api-cache:main
-      cache_to:
-        - ghcr.io/purplemonkeydish/cachr-api-cache:${CACHETAG-local}
+        - ghcr.io/purplemonkeydish/cachr-api:main
       args:
         - PROJECT=Cachr.Server
       platforms: *platforms
@@ -33,11 +29,7 @@ services:
       cache_from:
         - ghcr.io/purplemonkeydish/cachr-ui:nightly
         - ghcr.io/purplemonkeydish/cachr-ui:latest
-        - ghcr.io/purplemonkeydish/cachr-ui
-        - ghcr.io/purplemonkeydish/cachr-ui-cache:${CACHETAG-local}
-        - ghcr.io/purplemonkeydish/cachr-ui-cache:main
-      cache_to:
-        - ghcr.io/purplemonkeydish/cachr-ui-cache:${CACHETAG-local}
+        - ghcr.io/purplemonkeydish/cachr-ui:main
       args:
         - PROJECT=Cachr.Server.UI
       platforms: *platforms
