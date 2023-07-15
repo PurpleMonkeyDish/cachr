@@ -5,12 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Cachr.Core;
 
-public class ExpirationCleanupService : BackgroundService
+public class ExpiredEntryReaper : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<ExpirationCleanupService> _logger;
+    private readonly ILogger<ExpiredEntryReaper> _logger;
 
-    public ExpirationCleanupService(IServiceProvider serviceProvider, ILogger<ExpirationCleanupService> logger)
+    public ExpiredEntryReaper(IServiceProvider serviceProvider, ILogger<ExpiredEntryReaper> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;

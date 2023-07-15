@@ -11,7 +11,8 @@ public interface ICacheStorage
         int shard,
         DateTimeOffset? absoluteExpiration,
         TimeSpan? slidingExpiration,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken
+    );
 
     Task Touch(string key, int shard, CancellationToken cancellationToken);
 
@@ -29,7 +30,9 @@ public interface ICacheStorage
     IAsyncEnumerable<CacheEntry> StreamShardAsync(int shard,
         [EnumeratorCancellation] CancellationToken cancellationToken);
 
-    Task<int> ReapAsync(int count, CancellationToken cancellationToken);
+    Task<int> ReapShardAsync(int shard, CancellationToken cancellationToken);
+    Task ReapExpiredRecordsAsync(CancellationToken cancellationToken);
+    Task<int> ReapAsync(CancellationToken cancellationToken);
 
     Task CreateOrReplaceEntryAsync(string key,
         int shard,
@@ -39,5 +42,5 @@ public interface ICacheStorage
         CancellationToken cancellationToken);
 
     Task PurgeShard(int shard, CancellationToken cancellationToken);
-    Task ReapExpiredRecordsAsync(CancellationToken cancellationToken);
+    Task<int> ReapStaleMetadataAsync(CancellationToken cancellationToken);
 }

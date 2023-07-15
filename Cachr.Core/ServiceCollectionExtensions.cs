@@ -22,8 +22,10 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IDataMapper, DataMapper>();
         services.AddSingleton<ICacheFileManager, CacheFileManager>();
         services.AddSingleton<IShardSelector, ShardSelector>();
-        services.AddHostedService<GrimReaper>();
-        services.AddHostedService<ExpirationCleanupService>();
+        services.AddHostedService<MetadataReaper>();
+        services.AddHostedService<FileReaper>();
+        services.AddHostedService<EmptyDirectoryReaper>();
+        services.AddHostedService<ExpiredEntryReaper>();
         return services;
     }
 }

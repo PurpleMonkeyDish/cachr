@@ -145,9 +145,35 @@ public class CacheStorage : ICacheStorage
         }
     }
 
-    public async Task<int> ReapShardAsync(int shard, int count, CancellationToken cancellationToken)
+    public async Task<int> ReapShardAsync(int shard, CancellationToken cancellationToken)
     {
-        return await ReapAsync(() => EnumerateStoredObjects(shard), count, cancellationToken);
+        return await ReapAsync(() => EnumerateStoredObjects(shard), cancellationToken);
+    }
+
+    public async Task<int> ReapStaleMetadataAsync(CancellationToken cancellationToken)
+    {
+        var reapedCount = 0;
+        while (true)
+        {
+            var currentCount = 0;
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await foreach (var item in _context.ObjectMetadata
+                               .Where(i => !_context.StoredObjects.Any(x => x.MetadataId == i.Id)).Take(250)
+                               .AsAsyncEnumerable()
+                               .WithCancellation(cancellationToken)
+                               .ConfigureAwait(false))
+            {
+                currentCount++;
+                reapedCount++;
+                _context.Entry(item).State = EntityState.Deleted;
+            }
+
+            if (currentCount == 0) break;
+            await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return reapedCount;
     }
 
     public async Task ReapExpiredRecordsAsync(CancellationToken cancellationToken)
@@ -157,70 +183,85 @@ public class CacheStorage : ICacheStorage
         {
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false);
-            var count = await _context.StoredObjects
-                .Where(i => i.Metadata.AbsoluteExpiration != null || i.Metadata.SlidingExpiration != null)
-                .Where(i =>
-                    (i.Metadata.AbsoluteExpiration != null && i.Metadata.AbsoluteExpiration < startTimestamp) ||
-                    (i.Metadata.SlidingExpiration != null &&
-                     (i.Metadata.LastAccess + i.Metadata.SlidingExpiration.Value) < startTimestamp))
-                .Take(1000)
-                .ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
+            await foreach (var item in _context.StoredObjects
+                               .Where(i => i.Metadata.AbsoluteExpiration != null ||
+                                           i.Metadata.SlidingExpiration != null)
+                               .Where(i => i.Modified < (startTimestamp - 120000))
+                               .Where(i => i.Metadata.LastAccess < (startTimestamp - 120000))
+                               .Where(i => i.Metadata.Modified < (startTimestamp - 120000))
+                               .Where(i =>
+                                   (i.Metadata.AbsoluteExpiration != null &&
+                                    i.Metadata.AbsoluteExpiration < startTimestamp) ||
+                                   (i.Metadata.SlidingExpiration != null &&
+                                    (i.Metadata.LastAccess + i.Metadata.SlidingExpiration.Value) < startTimestamp))
+                               .OrderBy(i => i.Metadata.LastAccess)
+                               .Take(250)
+                               .AsAsyncEnumerable()
+                               .WithCancellation(cancellationToken)
+                               .ConfigureAwait(false)
+                          )
+            {
+                // Reaper will cleanup the metadata.
+                _context.Entry(item).State = EntityState.Deleted;
+            }
+
+            var count = await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             if (count == 0) break;
         }
     }
-    [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
-    private async Task<int> ReapAsync(Func<IEnumerable<FileInfo>> files, int count, CancellationToken cancellationToken)
+
+    private async Task<int> ReapAsync(Func<IEnumerable<FileInfo>> files, CancellationToken cancellationToken)
     {
         var currentCount = 0;
-        var scanStart = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-        await ReapExpiredRecordsAsync(cancellationToken);
-
-        foreach (var chunk in files().Chunk(100))
+        var earliestFileTime = DateTime.Now.AddMinutes(-10);
+        foreach (var fileChunk in files()
+                     .Chunk(100)
+                )
         {
-            if (currentCount >= count)
+            var chunk = fileChunk.Where(i => i.LastAccessTime < earliestFileTime)
+                .Where(i => i.LastWriteTime < earliestFileTime).ToArray();
+            foreach (var fileNeedingTimestampUpdate in fileChunk.Except(chunk))
             {
-                break;
+                fileNeedingTimestampUpdate.LastAccessTime = DateTime.Now;
             }
 
-            var dataToProcess = new List<(Guid id, int shard)>();
+            var dataToProcess = new List<(Guid id, int shard, FileInfo fileInfo)>();
             foreach (var file in chunk)
             {
-                (Guid id, int shard) info;
+                (Guid id, int shard, FileInfo fileInfo) info;
                 try
                 {
-                    info = (GetId(file), GetShard(file));
+                    info = (GetId(file), GetShard(file), file);
                     dataToProcess.Add(info);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to parse ID from path {fileName}", file.FullName);
-                    continue;
                 }
             }
 
             var toCheck = dataToProcess.Select(i => i.id).ToHashSet();
 
-            await using var transaction =
-                await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            if (toCheck.Count == 0) continue;
 
-            var storedRecords = await _context.StoredObjects
-                .Where(i => toCheck.Contains(i.MetadataId))
-                .Select(i => i.MetadataId)
-                .ToArrayAsync(cancellationToken)
-                .ConfigureAwait(false);
-            var existingRecords = storedRecords.ToHashSet();
-            dataToProcess.RemoveAll(i => existingRecords.Contains(i.id));
-            toCheck = dataToProcess.Select(i => i.id).ToHashSet();
-            await _context.ObjectMetadata
-                .Where(i => toCheck.Contains(i.Id))
-                .ExecuteDeleteAsync(cancellationToken)
-                .ConfigureAwait(false);
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            var existingRecords =
+                await _context.ObjectMetadata.Where(i => toCheck.Contains(i.Id)).Select(i => i.Id)
+                    .ToArrayAsync(cancellationToken);
+
+            var recordsToRemove = toCheck.Where(i => existingRecords.All(x => x != i)).ToHashSet();
+            if (recordsToRemove.Count == 0) break;
+
 
             foreach (var info in dataToProcess)
             {
+                if (!recordsToRemove.Contains(info.id))
+                {
+                    info.fileInfo.LastAccessTime = DateTime.Now;
+                    continue;
+                }
+
+                currentCount++;
                 // If we fail to delete the file, it's ok. We'll catch it with the next reap.
                 try
                 {
@@ -231,18 +272,14 @@ public class CacheStorage : ICacheStorage
                     _logger.LogWarning(ex, "Failed to delete object {id} on shard {shard}", info.id, info.shard);
                 }
             }
-
-            // We count this even if the delete fails
-            // As this is the return value, which may be an indicator to the caller if they need to make another pass or not.
-            currentCount++;
         }
 
         return currentCount;
     }
 
-    public async Task<int> ReapAsync(int count, CancellationToken cancellationToken)
+    public async Task<int> ReapAsync(CancellationToken cancellationToken)
     {
-        return await ReapAsync(EnumerateStoredObjects, count, cancellationToken).ConfigureAwait(false);
+        return await ReapAsync(EnumerateStoredObjects, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task CreateOrReplaceEntryAsync(string key,
@@ -270,7 +307,6 @@ public class CacheStorage : ICacheStorage
         };
 
         _context.ObjectMetadata.Add(metadataEntry);
-        await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         var originalId = storedObject?.MetadataId;
 
         if (storedObject is not null)
