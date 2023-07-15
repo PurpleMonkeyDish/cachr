@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Cachr.Core.Cache;
 using Cachr.Core.Data;
 using Microsoft.AspNetCore.Hosting;
@@ -16,7 +15,7 @@ public static class ServiceCollectionExtensions
         services.AddOptions<StorageObjectConfiguration>().Bind(configuration);
         services.AddOptions<ReaperConfiguration>().Bind(configuration);
         services.AddDbContextPool<ObjectStorageContext>((provider, builder) =>
-            builder.UseSqlite(
+            builder.UseNpgsql(
                 provider.GetRequiredService<IOptions<StorageObjectConfiguration>>().Value.ConnectionString));
         services.AddTransient<IStartupFilter, MigrationStartupFilter>();
         services.AddTransient<ICacheStorage, CacheStorage>();

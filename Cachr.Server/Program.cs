@@ -1,7 +1,5 @@
 using Cachr.Core;
-using SQLitePCL;
 
-Batteries.Init();
 var builder = WebApplication.CreateBuilder(args);
 var configPath = Environment.GetEnvironmentVariable("USER_CONFIGURATION") ?? "./UserData/appsettings.json";
 builder.Configuration.AddJsonFile(configPath, optional: false, reloadOnChange: true);
