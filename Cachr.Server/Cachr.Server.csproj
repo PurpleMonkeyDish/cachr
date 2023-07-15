@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\Cachr.Core\Cachr.Core.csproj"/>
+    <ProjectReference Include="..\Cachr.Core\Cachr.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

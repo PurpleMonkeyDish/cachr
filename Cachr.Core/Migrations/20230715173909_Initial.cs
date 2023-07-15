@@ -15,12 +15,12 @@ namespace Cachr.Core.Migrations
                 name: "ObjectMetadata",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    AbsoluteExpiration = table.Column<long>(type: "INTEGER", nullable: true),
-                    SlidingExpiration = table.Column<double>(type: "REAL", nullable: true),
-                    Created = table.Column<long>(type: "INTEGER", nullable: false),
-                    Modified = table.Column<long>(type: "INTEGER", nullable: false),
-                    LastAccess = table.Column<long>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    AbsoluteExpiration = table.Column<long>(type: "bigint", nullable: true),
+                    SlidingExpiration = table.Column<double>(type: "double precision", nullable: true),
+                    Created = table.Column<long>(type: "bigint", nullable: false),
+                    Modified = table.Column<long>(type: "bigint", nullable: false),
+                    LastAccess = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,11 +31,11 @@ namespace Cachr.Core.Migrations
                 name: "StoredObjects",
                 columns: table => new
                 {
-                    Key = table.Column<string>(type: "TEXT", nullable: false),
-                    Shard = table.Column<int>(type: "INTEGER", nullable: false),
-                    MetadataId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Created = table.Column<long>(type: "INTEGER", nullable: false),
-                    Modified = table.Column<long>(type: "INTEGER", nullable: false)
+                    Key = table.Column<string>(type: "text", nullable: false),
+                    Shard = table.Column<int>(type: "integer", nullable: false),
+                    MetadataId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Created = table.Column<long>(type: "bigint", nullable: false),
+                    Modified = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {

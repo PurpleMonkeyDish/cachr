@@ -3,6 +3,7 @@ using System;
 using Cachr.Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cachr.Core.Migrations
 {
     [DbContext(typeof(ObjectStorageContext))]
-    partial class ObjectStorageContextModelSnapshot : ModelSnapshot
+    [Migration("20230715173909_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -42,14 +45,6 @@ namespace Cachr.Core.Migrations
                     b.HasKey("Key");
 
                     b.HasIndex("MetadataId")
-                        .IsUnique();
-
-                    b.HasIndex("Shard");
-
-                    b.HasIndex("Shard", "Key")
-                        .IsUnique();
-
-                    b.HasIndex("Shard", "MetadataId")
                         .IsUnique();
 
                     b.ToTable("StoredObjects");
