@@ -17,6 +17,7 @@ public class ObjectStorageContext : DbContext
         modelBuilder.Entity<StoredObject>().Property(i => i.Key).IsRequired().ValueGeneratedNever();
         modelBuilder.Entity<StoredObject>().HasKey(i => i.Key);
         modelBuilder.Entity<StoredObject>().HasIndex(i => i.MetadataId).IsUnique();
+        modelBuilder.Entity<StoredObject>().HasIndex(i => i.Shard).IsUnique(false);
         modelBuilder.Entity<StoredObject>().Property(i => i.MetadataId).IsRequired();
         modelBuilder.Entity<StoredObject>().HasOne<StoredObjectMetadata>(i => i.Metadata);
 
