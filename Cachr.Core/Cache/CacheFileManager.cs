@@ -53,6 +53,7 @@ public class CacheFileManager : ICacheFileManager
         var directory = Directory.CreateDirectory(BasePath);
         _logger.LogInformation("Scanning for empty directories in {path}", directory.FullName);
         var directoriesToProcess = new Stack<DirectoryInfo>();
+        var purgedCount = 0;
         directoriesToProcess.Push(directory);
         while (directoriesToProcess.Count > 0)
         {
@@ -61,7 +62,7 @@ public class CacheFileManager : ICacheFileManager
             var innerObjects = next.GetFileSystemInfos();
             if (innerObjects.Length == 0)
             {
-                _logger.LogInformation("Purging empty directory {path}", next.FullName);
+                purgedCount++;
                 if (next.FullName != directory.FullName)
                 {
                     directoriesToProcess.Push(next.Parent!);
@@ -77,6 +78,7 @@ public class CacheFileManager : ICacheFileManager
                 directoriesToProcess.Push(info);
             }
         }
+        _logger.LogInformation("Purged {count} empty directories from object store", purgedCount);
     }
 
     private string GetPath(Guid id, int shard)

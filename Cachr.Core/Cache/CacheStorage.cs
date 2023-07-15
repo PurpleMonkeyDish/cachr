@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Cachr.Core.Data;
 using Microsoft.EntityFrameworkCore;
@@ -149,52 +150,86 @@ public class CacheStorage : ICacheStorage
         return await ReapAsync(() => EnumerateStoredObjects(shard), count, cancellationToken);
     }
 
+    public async Task ReapExpiredRecordsAsync(CancellationToken cancellationToken)
+    {
+        var startTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        while (true)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false);
+            var count = await _context.StoredObjects
+                .Where(i => i.Metadata.AbsoluteExpiration != null || i.Metadata.SlidingExpiration != null)
+                .Where(i =>
+                    (i.Metadata.AbsoluteExpiration != null && i.Metadata.AbsoluteExpiration < startTimestamp) ||
+                    (i.Metadata.SlidingExpiration != null &&
+                     (i.Metadata.LastAccess + i.Metadata.SlidingExpiration.Value) < startTimestamp))
+                .Take(1000)
+                .ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            if (count == 0) break;
+        }
+    }
+    [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
     private async Task<int> ReapAsync(Func<IEnumerable<FileInfo>> files, int count, CancellationToken cancellationToken)
     {
         var currentCount = 0;
+        var scanStart = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-        foreach (var file in files())
+        await ReapExpiredRecordsAsync(cancellationToken);
+
+        foreach (var chunk in files().Chunk(100))
         {
             if (currentCount >= count)
             {
                 break;
             }
 
-            (Guid id, int shard) info;
-            try
+            var dataToProcess = new List<(Guid id, int shard)>();
+            foreach (var file in chunk)
             {
-                info = (GetId(file), GetShard(file));
+                (Guid id, int shard) info;
+                try
+                {
+                    info = (GetId(file), GetShard(file));
+                    dataToProcess.Add(info);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse ID from path {fileName}", file.FullName);
+                    continue;
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to parse ID from path {fileName}", file.FullName);
-                continue;
-            }
+
+            var toCheck = dataToProcess.Select(i => i.id).ToHashSet();
 
             await using var transaction =
                 await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-            var storedRecord = await _context.StoredObjects
-                .FirstOrDefaultAsync(i => i.MetadataId == info.id, cancellationToken)
-                .ConfigureAwait(false);
-            if (storedRecord is not null)
-            {
-                continue;
-            }
 
+            var storedRecords = await _context.StoredObjects
+                .Where(i => toCheck.Contains(i.MetadataId))
+                .Select(i => i.MetadataId)
+                .ToArrayAsync(cancellationToken)
+                .ConfigureAwait(false);
+            var existingRecords = storedRecords.ToHashSet();
+            dataToProcess.RemoveAll(i => existingRecords.Contains(i.id));
+            toCheck = dataToProcess.Select(i => i.id).ToHashSet();
             await _context.ObjectMetadata
-                .Where(i => i.Id == info.id)
+                .Where(i => toCheck.Contains(i.Id))
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-            // If we fail to delete the file, it's ok. We'll catch it with the next reap.
-            try
+            foreach (var info in dataToProcess)
             {
-                _fileManager.Delete(info.id, info.shard);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to delete object {id} on shard {shard}", info.id, info.shard);
+                // If we fail to delete the file, it's ok. We'll catch it with the next reap.
+                try
+                {
+                    _fileManager.Delete(info.id, info.shard);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete object {id} on shard {shard}", info.id, info.shard);
+                }
             }
 
             // We count this even if the delete fails

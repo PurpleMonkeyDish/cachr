@@ -12,6 +12,7 @@ public class ShardSelector : IShardSelector
         Span<byte> crc = stackalloc byte[4];
         var inputByteCount = Encoding.UTF8.GetByteCount(key);
         Span<byte> inputBytes = stackalloc byte[inputByteCount];
+        Encoding.UTF8.GetBytes(key, inputBytes);
         Crc32.Hash(inputBytes, crc);
         if (!BitConverter.IsLittleEndian)
         {

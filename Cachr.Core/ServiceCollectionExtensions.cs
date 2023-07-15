@@ -1,6 +1,6 @@
+using System.Diagnostics;
 using Cachr.Core.Cache;
 using Cachr.Core.Data;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,24 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICacheFileManager, CacheFileManager>();
         services.AddSingleton<IShardSelector, ShardSelector>();
         services.AddHostedService<GrimReaper>();
+        services.AddHostedService<ExpirationCleanupService>();
         return services;
-    }
-}
-
-public class MigrationStartupFilter : IStartupFilter
-{
-    public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
-    {
-        return context =>
-        {
-            using (var scope = context.ApplicationServices.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ObjectStorageContext>();
-
-                dbContext.Database.Migrate();
-            }
-
-            next(context);
-        };
     }
 }

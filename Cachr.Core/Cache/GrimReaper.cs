@@ -36,6 +36,7 @@ public class GrimReaper : BackgroundService
             do
             {
                 await using var scope = _scopeFactory.CreateAsyncScope();
+                var totalRecordsReaped = 0;
                 // Injects scoped db context, so we need to resolve it. May as well use a scope per pass.
                 var cacheStorage = scope.ServiceProvider.GetRequiredService<ICacheStorage>();
                 _logger.LogInformation("Starting background reap");
@@ -43,6 +44,7 @@ public class GrimReaper : BackgroundService
                 {
                     var reapedRecords = await cacheStorage.ReapAsync(batchSize, stoppingToken);
                     _logger.LogInformation("Reaper pass {pass} - Collected {count}", x + 1, reapedRecords);
+                    totalRecordsReaped += reapedRecords;
                     if (reapedRecords == 0) break;
                 }
 
@@ -55,6 +57,7 @@ public class GrimReaper : BackgroundService
                 {
                     _logger.LogWarning(ex, "Failed to purge empty directories. Will continue anyway.");
                 }
+
             } while (await periodicTimer.WaitForNextTickAsync(stoppingToken));
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

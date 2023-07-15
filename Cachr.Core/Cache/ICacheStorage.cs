@@ -39,4 +39,5 @@ public interface ICacheStorage
         CancellationToken cancellationToken);
 
     Task PurgeShard(int shard, CancellationToken cancellationToken);
+    Task ReapExpiredRecordsAsync(CancellationToken cancellationToken);
 }
