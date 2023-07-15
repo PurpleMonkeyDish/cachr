@@ -42,7 +42,7 @@ public class GrimReaper : BackgroundService
                 for (var x = 0; x < reapCount; x++)
                 {
                     var reapedRecords = await cacheStorage.ReapAsync(batchSize, stoppingToken);
-                    _logger.LogInformation("Reaper pass {pass} - Collected {count}", x + 1, reapCount);
+                    _logger.LogInformation("Reaper pass {pass} - Collected {count}", x + 1, reapedRecords);
                     if (reapedRecords == 0) break;
                 }
 
