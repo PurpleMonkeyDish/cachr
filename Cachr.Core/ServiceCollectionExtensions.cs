@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddObjectStorage(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<StorageObjectConfiguration>().Bind(configuration);
+        services.AddOptions<ReaperConfiguration>().Bind(configuration);
         services.AddDbContextPool<ObjectStorageContext>((provider, builder) =>
             builder.UseSqlite(
                 provider.GetRequiredService<IOptions<StorageObjectConfiguration>>().Value.ConnectionString));
@@ -22,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IDataMapper, DataMapper>();
         services.AddSingleton<ICacheFileManager, CacheFileManager>();
         services.AddSingleton<IShardSelector, ShardSelector>();
+        services.AddHostedService<GrimReaper>();
         return services;
     }
 }

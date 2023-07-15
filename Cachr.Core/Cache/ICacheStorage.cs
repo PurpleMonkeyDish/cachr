@@ -3,20 +3,26 @@ using Cachr.Core.Data;
 
 namespace Cachr.Core.Cache;
 
+public enum UpdateType
+{
+    Local,
+    Remote
+}
 public interface ICacheStorage
 {
-    Task<CacheEntry?> GetMetadataAsync(string key, CancellationToken cancellationToken);
+    Task<CacheEntry?> GetMetadataAsync(string key, int shard, CancellationToken cancellationToken);
 
     Task<CacheEntry?> UpdateExpiration(string key,
+        int shard,
         DateTimeOffset? absoluteExpiration,
         TimeSpan? slidingExpiration,
         CancellationToken cancellationToken);
 
-    Task Touch(string key, CancellationToken cancellationToken);
+    Task Touch(string key, int shard, CancellationToken cancellationToken);
 
     Task SyncRecordAsync(
         CacheEntry remoteRecord,
-        Func<CacheEntry, bool, Task> needsUpdateCallback,
+        Func<CacheEntry, UpdateType, Task> needsUpdateCallback,
         CancellationToken cancellationToken);
 
     IAsyncEnumerable<CacheEntry> SampleShardAsync(
@@ -36,4 +42,6 @@ public interface ICacheStorage
         TimeSpan? slidingExpiration,
         Func<Stream, Task> callbackAsync,
         CancellationToken cancellationToken);
+
+    Task PurgeShard(int shard, CancellationToken cancellationToken);
 }

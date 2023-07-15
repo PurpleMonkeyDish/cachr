@@ -1,9 +1,83 @@
 using System.Runtime.CompilerServices;
 using Cachr.Core.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Cachr.Core.Cache;
+
+public class ReaperConfiguration
+{
+    public TimeSpan ReapInterval { get; set; } = TimeSpan.FromHours(1);
+    public int ReapBatchSize { get; set; }
+    public int ReapPasses { get; set; } = 10;
+}
+
+public class GrimReaper : BackgroundService
+{
+    private readonly IOptions<ReaperConfiguration> _options;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ICacheFileManager _fileManager;
+    private readonly ILogger<GrimReaper> _logger;
+
+    public GrimReaper(IOptions<ReaperConfiguration> options,
+        IServiceScopeFactory scopeFactory,
+        ICacheFileManager fileManager,
+        ILogger<GrimReaper> logger)
+    {
+        _options = options;
+        _scopeFactory = scopeFactory;
+        _fileManager = fileManager;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await Task.Yield();
+        var reapCount = _options.Value.ReapPasses;
+        if (reapCount <= 0) reapCount = int.MaxValue;
+        var batchSize = _options.Value.ReapBatchSize;
+        if (batchSize <= 0) batchSize = int.MaxValue;
+        using var periodicTimer = new PeriodicTimer(_options.Value.ReapInterval);
+        try
+        {
+            do
+            {
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                // Injects scoped db context, so we need to resolve it. May as well use a scope per pass.
+                var cacheStorage = scope.ServiceProvider.GetRequiredService<ICacheStorage>();
+                _logger.LogInformation("Starting background reap");
+                for (var x = 0; x < reapCount; x++)
+                {
+                    var reapedRecords = await cacheStorage.ReapAsync(batchSize, stoppingToken);
+                    _logger.LogInformation("Reaper pass {pass} - Collected {count}", x + 1, reapCount);
+                    if (reapedRecords == 0) break;
+                }
+
+                _logger.LogInformation("Purging empty directories from object storage");
+                try
+                {
+                    _fileManager.PurgeEmptyDirectories(stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to purge empty directories. Will continue anyway.");
+                }
+            } while (await periodicTimer.WaitForNextTickAsync(stoppingToken));
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            // This will only happen if we fail to enumerate our storage directory.
+            _logger.LogCritical(ex, "FATAL: Reaper process failed due to an exception");
+        }
+    }
+}
 
 public class CacheStorage : ICacheStorage
 {
@@ -23,7 +97,7 @@ public class CacheStorage : ICacheStorage
         _logger = logger;
     }
 
-    public async Task<CacheEntry?> GetMetadataAsync(string key, CancellationToken cancellationToken)
+    public async Task<CacheEntry?> GetMetadataAsync(string key, int shard, CancellationToken cancellationToken)
     {
         var storedObject = await _context.StoredObjects
             .Include(i => i.Metadata)
@@ -34,13 +108,15 @@ public class CacheStorage : ICacheStorage
     }
 
     public async Task<CacheEntry?> UpdateExpiration(string key,
+        int shard,
         DateTimeOffset? absoluteExpiration,
         TimeSpan? slidingExpiration,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         await using var transaction =
             await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        var metadata = await GetMetadataAsync(key, cancellationToken);
+        var metadata = await GetMetadataAsync(key, shard, cancellationToken);
         if (metadata is null)
         {
             return null;
@@ -52,17 +128,19 @@ public class CacheStorage : ICacheStorage
         metadataEntry.AbsoluteExpiration = absoluteExpiration?.ToUnixTimeMilliseconds();
         metadataEntry.LastAccess = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         await _context.SaveChangesAsync(cancellationToken);
-        metadata = await GetMetadataAsync(key, cancellationToken);
+        metadata = await GetMetadataAsync(key, shard, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         return metadata;
     }
 
-    public async Task Touch(string key, CancellationToken cancellationToken)
+    public async Task Touch(string key, int shard, CancellationToken cancellationToken)
     {
         await using var transaction =
             await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        var metadata = await _context.StoredObjects.Where(i => i.Key == key).Select(i => i.Metadata)
+        var metadata = await _context.StoredObjects.Where(i => i.Shard == shard)
+            .Where(i => i.Key == key)
+            .Select(i => i.Metadata)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
         if (metadata is null)
@@ -77,10 +155,11 @@ public class CacheStorage : ICacheStorage
 
     public async Task SyncRecordAsync(
         CacheEntry remoteRecord,
-        Func<CacheEntry, bool, Task> needsUpdateCallback,
+        Func<CacheEntry, UpdateType, Task> needsUpdateCallback,
         CancellationToken cancellationToken)
     {
-        var record = await GetMetadataAsync(remoteRecord.Key, cancellationToken).ConfigureAwait(false);
+        var record = await GetMetadataAsync(remoteRecord.Key, remoteRecord.Shard, cancellationToken)
+            .ConfigureAwait(false);
         if (record is not null)
         {
             if (record.Modified == remoteRecord.Modified && remoteRecord.MetadataId == record.MetadataId)
@@ -90,12 +169,12 @@ public class CacheStorage : ICacheStorage
 
             if (record.Modified > remoteRecord.Modified)
             {
-                await needsUpdateCallback(remoteRecord, true).ConfigureAwait(false);
+                await needsUpdateCallback(remoteRecord, UpdateType.Remote).ConfigureAwait(false);
                 return;
             }
         }
 
-        await needsUpdateCallback(remoteRecord, false).ConfigureAwait(false);
+        await needsUpdateCallback(remoteRecord, UpdateType.Local).ConfigureAwait(false);
     }
 
     public async IAsyncEnumerable<CacheEntry> SampleShardAsync(
@@ -129,18 +208,26 @@ public class CacheStorage : ICacheStorage
     public async IAsyncEnumerable<CacheEntry> StreamShardAsync(int shard,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await foreach (var item in _context.StoredObjects.Include(i => i.Metadata).Where(i => i.Shard == shard)
-                           .AsAsyncEnumerable().WithCancellation(cancellationToken))
+        await foreach (var item in _context.StoredObjects
+                           .Include(i => i.Metadata)
+                           .Where(i => i.Shard == shard)
+                           .AsAsyncEnumerable()
+                           .WithCancellation(cancellationToken))
         {
             yield return _dataMapper.MapCacheEntryData(item)!;
         }
     }
 
-    public async Task<int> ReapAsync(int count, CancellationToken cancellationToken)
+    public async Task<int> ReapShardAsync(int shard, int count, CancellationToken cancellationToken)
+    {
+        return await ReapAsync(() => EnumerateStoredObjects(shard), count, cancellationToken);
+    }
+
+    private async Task<int> ReapAsync(Func<IEnumerable<FileInfo>> files, int count, CancellationToken cancellationToken)
     {
         var currentCount = 0;
 
-        foreach (var file in EnumerateStoredObjects())
+        foreach (var file in files())
         {
             if (currentCount >= count)
             {
@@ -192,6 +279,11 @@ public class CacheStorage : ICacheStorage
         return currentCount;
     }
 
+    public async Task<int> ReapAsync(int count, CancellationToken cancellationToken)
+    {
+        return await ReapAsync(EnumerateStoredObjects, count, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task CreateOrReplaceEntryAsync(string key,
         int shard,
         DateTimeOffset? absoluteExpiration,
@@ -236,7 +328,34 @@ public class CacheStorage : ICacheStorage
 
         if (originalId != null)
         {
-            _fileManager.Delete(originalId.Value, shard);
+            await TryReapRecord(originalId.Value, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public async Task PurgeShard(int shard, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false);
+            var count = await _context.StoredObjects.Where(i => i.Shard == shard).Take(200)
+                .ExecuteDeleteAsync(cancellationToken)
+                .ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            if (count == 0) break;
+        }
+
+        try
+        {
+            var shardDirectory = GetShardDirectoryInfo(shard);
+            if (!shardDirectory.Exists) return;
+            shardDirectory.Delete(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to purge files for shard {shard}, these will be collected during background reaping",
+                shard);
         }
     }
 
@@ -248,6 +367,23 @@ public class CacheStorage : ICacheStorage
     private Guid GetId(FileInfo fileInfo)
     {
         return Guid.Parse(fileInfo.Directory!.Name);
+    }
+
+    private DirectoryInfo GetShardDirectoryInfo(int shard)
+    {
+        return new DirectoryInfo(Path.GetFullPath(Path.Combine(_fileManager.BasePath, shard.ToString())));
+    }
+
+    private IEnumerable<FileInfo> EnumerateStoredObjects(int shard)
+    {
+        var directoryInfo = GetShardDirectoryInfo(shard);
+        if (!directoryInfo.Exists) return Enumerable.Empty<FileInfo>();
+
+        return directoryInfo.EnumerateFiles(_fileManager.FileName,
+            new EnumerationOptions
+            {
+                MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = true, MaxRecursionDepth = 5
+            });
     }
 
     private IEnumerable<FileInfo> EnumerateStoredObjects()

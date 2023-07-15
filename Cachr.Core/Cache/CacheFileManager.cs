@@ -1,4 +1,5 @@
 using Cachr.Core.Data;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Cachr.Core.Cache;
@@ -7,10 +8,14 @@ public class CacheFileManager : ICacheFileManager
 {
     private const FileShare ShareMode = FileShare.ReadWrite | FileShare.Delete;
     private readonly IOptions<StorageObjectConfiguration> _options;
+    private readonly ILogger<CacheFileManager> _logger;
 
-    public CacheFileManager(IOptions<StorageObjectConfiguration> options)
+    public CacheFileManager(IOptions<StorageObjectConfiguration> options, ILogger<CacheFileManager> logger)
     {
         _options = options;
+        var directory = Directory.CreateDirectory(BasePath);
+        logger.LogInformation("Cache directory: {path}", directory.FullName);
+        _logger = logger;
     }
 
     public string FileName => "object.bin";
@@ -40,6 +45,37 @@ public class CacheFileManager : ICacheFileManager
         if (File.Exists(path))
         {
             File.Delete(path);
+        }
+    }
+
+    public void PurgeEmptyDirectories(CancellationToken cancellationToken)
+    {
+        var directory = Directory.CreateDirectory(BasePath);
+        _logger.LogInformation("Scanning for empty directories in {path}", directory.FullName);
+        var directoriesToProcess = new Stack<DirectoryInfo>();
+        directoriesToProcess.Push(directory);
+        while (directoriesToProcess.Count > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var next = directoriesToProcess.Pop();
+            var innerObjects = next.GetFileSystemInfos();
+            if (innerObjects.Length == 0)
+            {
+                _logger.LogInformation("Purging empty directory {path}", next.FullName);
+                if (next.FullName != directory.FullName)
+                {
+                    directoriesToProcess.Push(next.Parent!);
+                    next.Delete();
+                }
+
+                continue;
+            }
+
+            foreach (var info in innerObjects.OfType<DirectoryInfo>())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                directoriesToProcess.Push(info);
+            }
         }
     }
 

@@ -21,4 +21,5 @@ public interface ICacheFileManager
 
     void Delete(Guid id, int shard);
     void PurgeShard(int shard);
+    void PurgeEmptyDirectories(CancellationToken cancellationToken);
 }
