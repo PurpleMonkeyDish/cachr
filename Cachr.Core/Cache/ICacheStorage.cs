@@ -3,11 +3,6 @@ using Cachr.Core.Data;
 
 namespace Cachr.Core.Cache;
 
-public enum UpdateType
-{
-    Local,
-    Remote
-}
 public interface ICacheStorage
 {
     Task<CacheEntry?> GetMetadataAsync(string key, int shard, CancellationToken cancellationToken);
