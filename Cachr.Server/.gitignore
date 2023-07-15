@@ -1,0 +1,3 @@
+**/UserData/*.db*
+**/ObjectStorage/**
+!**/ObjectStorage/.keep
