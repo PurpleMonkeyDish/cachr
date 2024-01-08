@@ -9,8 +9,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build-docker:
-    runs-on: ubuntu-latest
+    runs-on: purplemonkeydish-runners
     steps:
+      - run: sudo apt-get update
+      - run: sudo apt-get upgrade -y
+      - run: sudo apt-get install curl wget git -y
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
